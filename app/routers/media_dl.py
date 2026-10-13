@@ -128,6 +128,9 @@ def _meta(info: dict) -> dict:
 def _pick_progressive_mp4(info: dict, max_height: int | None) -> dict | None:
     best = None
     for f in info.get("formats") or []:
+        # Hanya file langsung (protocol https/http) — bukan manifest HLS/DASH.
+        if (f.get("protocol") or "https") not in ("https", "http"):
+            continue
         if f.get("ext") != "mp4" or f.get("vcodec") == "none" or f.get("acodec") == "none":
             continue
         h = f.get("height") or 0
@@ -176,7 +179,25 @@ def _best_download(info: dict, max_height: int | None = None) -> dict | None:
     dl = _pick_progressive_mp4(info, max_height)
     if dl:
         return dl
-    return _pick_merged_mp4(info, max_height)
+    dl = _pick_merged_mp4(info, max_height)
+    if dl:
+        return dl
+    # Fallback terakhir: manifest streaming (HLS/DASH) — bukan file langsung.
+    for f in info.get("formats") or []:
+        proto = f.get("protocol") or ""
+        if "m3u8" in proto or "dash" in proto:
+            if f.get("url"):
+                return {
+                    "kind": "stream-manifest",
+                    "url": f["url"],
+                    "protocol": proto,
+                    "ext": f.get("ext"),
+                    "quality": f.get("height"),
+                    "note": ("Ini manifest streaming HLS/DASH — putar dengan player "
+                             "yang mendukungnya (mis. VLC/hls.js), bukan file "
+                             "video langsung yang bisa diunduh satu klik."),
+                }
+    return None
 
 
 def _pick_bestaudio(info: dict) -> dict | None:
