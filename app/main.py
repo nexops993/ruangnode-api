@@ -1,15 +1,12 @@
-"""RuangNode API — website + gerbang Access Token (fase website).
+"""RuangNode API — website + gerbang Access Token.
 
 Beranda bersifat publik (landing page + tombol Login). Dashboard, dokumentasi,
 dan semua request API hanya bisa diakses dengan Access Token yang benar.
 Satu-satunya endpoint API publik adalah /api/health (cek liveness).
 """
 
-import hashlib
 import hmac
 import os
-import re
-import time
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import (
@@ -20,12 +17,22 @@ from fastapi.responses import (
 )
 from fastapi.templating import Jinja2Templates
 
-ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "")
-SESSION_SECRET = os.environ.get("SESSION_SECRET", "")
-SESSION_DAYS = 7
-COOKIE_NAME = "rn_session"
+from . import security
+from .routers import download as download_router
+from .security import (
+    COOKIE_NAME,
+    SESSION_DAYS,
+    clean_token,
+    clear_fails,
+    client_ip,
+    is_locked,
+    make_session,
+    page_allowed,
+    record_fail,
+    require_api_token,
+)
 
-if not ACCESS_TOKEN or not SESSION_SECRET:
+if not security.ACCESS_TOKEN or not security.SESSION_SECRET:
     raise SystemExit(
         "ACCESS_TOKEN dan SESSION_SECRET wajib di-set via environment "
         "(lihat /etc/ruangnode-api/env di VPS)."
@@ -40,9 +47,10 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
+app.include_router(download_router.router)
 
 # ----------------------------------------------------------------------------
-# Data katalog (fase website: statis; modul dibangun menyusul per kategori)
+# Data katalog (modul dibangun per kategori sampai tuntas)
 # ----------------------------------------------------------------------------
 CATEGORIES = [
     {"name": "Download", "icon": "download", "planned": 29, "status": "segera",
@@ -66,120 +74,9 @@ PLANNED_TOTAL = sum(c["planned"] for c in CATEGORIES)
 ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/health", "desc": "Cek liveness (publik, tanpa token)"},
     {"method": "GET", "path": "/api", "desc": "Katalog modul (butuh token)"},
+    {"method": "GET", "path": "/api/download/tiktok", "desc": "Info unduhan TikTok: video tanpa watermark, MP3, foto carousel"},
+    {"method": "GET", "path": "/api/download/tiktok/file", "desc": "Unduh file TikTok: video/MP3/foto pilihan (ZIP)/GIF dari Live Photo"},
 ]
-
-# ----------------------------------------------------------------------------
-# Helper keamanan
-# ----------------------------------------------------------------------------
-def clean_token(value: str | None) -> str:
-    """Buang SEMUA whitespace (spasi, baris baru, tab) dari token.
-
-    Token yang disalin dari chat sering membawa baris baru di tengah atau
-    spasi tak terlihat; membersihkan semuanya membuat tempelan apa adanya
-    dari WhatsApp tetap terbaca benar.
-    """
-    return re.sub(r"\s+", "", value or "")
-
-
-def _sign(ts: str) -> str:
-    return hmac.new(SESSION_SECRET.encode(), ts.encode(), hashlib.sha256).hexdigest()
-
-
-def make_session() -> str:
-    ts = str(int(time.time()))
-    return f"{ts}.{_sign(ts)}"
-
-
-def valid_session(cookie_val: str | None) -> bool:
-    if not cookie_val or "." not in cookie_val:
-        return False
-    ts, sig = cookie_val.split(".", 1)
-    if not ts.isdigit():
-        return False
-    if not hmac.compare_digest(_sign(ts), sig):
-        return False
-    if int(time.time()) - int(ts) > SESSION_DAYS * 24 * 3600:
-        return False
-    return True
-
-
-def page_allowed(request: Request) -> bool:
-    return valid_session(request.cookies.get(COOKIE_NAME))
-
-
-# ----------------------------------------------------------------------------
-# Anti brute-force: kunci per-IP setelah beberapa kegagalan token.
-# Token situs ini sengaja pendek (pilihan pemilik), jadi gerbangnya yang
-# diperkeras: 5 kegagalan dalam 10 menit -> IP dikunci 15 menit.
-# ----------------------------------------------------------------------------
-FAIL_WINDOW = 600        # detik
-FAIL_MAX = 5             # kegagalan maksimum dalam jendela
-LOCK_SECONDS = 900       # lama kunci
-_fails: dict[str, list[float]] = {}
-_locked_until: dict[str, float] = {}
-
-
-def client_ip(request: Request) -> str:
-    # Di balik Cloudflare Tunnel, IP asli pengunjung ada di CF-Connecting-IP.
-    cf_ip = request.headers.get("CF-Connecting-IP")
-    if cf_ip:
-        return cf_ip.strip()
-    return request.client.host if request.client else "unknown"
-
-
-def is_locked(ip: str) -> bool:
-    until = _locked_until.get(ip)
-    if until and time.time() < until:
-        return True
-    if until:
-        _locked_until.pop(ip, None)
-        _fails.pop(ip, None)
-    return False
-
-
-def record_fail(ip: str) -> None:
-    now = time.time()
-    recent = [t for t in _fails.get(ip, []) if now - t < FAIL_WINDOW]
-    recent.append(now)
-    _fails[ip] = recent
-    if len(recent) >= FAIL_MAX:
-        _locked_until[ip] = now + LOCK_SECONDS
-
-
-def clear_fails(ip: str) -> None:
-    _fails.pop(ip, None)
-
-
-def token_from_request(request: Request) -> str | None:
-    token = request.headers.get("X-Access-Token")
-    if not token:
-        auth = request.headers.get("Authorization", "")
-        if auth.startswith("Bearer "):
-            token = auth[7:]
-    if not token:
-        token = request.query_params.get("token")
-    return clean_token(token) or None
-
-
-def require_api_token(request: Request) -> None:
-    ip = client_ip(request)
-    if is_locked(ip):
-        raise HTTPException(
-            status_code=429,
-            detail="Terlalu banyak percobaan token yang salah dari IP ini. "
-                   "Coba lagi dalam 15 menit.",
-        )
-    token = token_from_request(request)
-    if not token or not hmac.compare_digest(token, ACCESS_TOKEN):
-        record_fail(ip)
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized: Access Token tidak ada atau salah. "
-                   "Sertakan via header X-Access-Token, Authorization: Bearer <token>, "
-                   "atau query ?token=.",
-        )
-    clear_fails(ip)
-
 
 # ----------------------------------------------------------------------------
 # Envelope & error handler
@@ -232,7 +129,7 @@ async def _do_login(request: Request, token: str):
             status_code=429,
         )
     t = clean_token(token)
-    if t and hmac.compare_digest(t, ACCESS_TOKEN):
+    if t and hmac.compare_digest(t, security.ACCESS_TOKEN):
         clear_fails(ip)
         resp = RedirectResponse("/", status_code=303)
         resp.set_cookie(
