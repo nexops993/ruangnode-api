@@ -65,9 +65,11 @@ async def nine_chat(messages: list[dict], model: str, max_tokens: int = 1024,
         upstream_fail(f"Gateway 9Router membalas HTTP {resp.status_code}.")
     try:
         text = resp.text.strip()
-        # 9Router menempelkan suffix SSE "data: [DONE]" setelah objek JSON.
-        if "\ndata:" in text:
-            text = text.split("\ndata:")[0]
+        # 9Router menempelkan suffix SSE "data: [DONE]" setelah objek JSON
+        # (kadang langsung menempel tanpa newline, kadang dengan newline).
+        idx = text.rfind("data: [DONE]")
+        if idx != -1:
+            text = text[:idx].rstrip()
         data = json.loads(text)
         # 9Router membungkus respons OpenAI dalam kunci "data".
         payload = data.get("data", data)
