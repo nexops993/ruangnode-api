@@ -78,6 +78,14 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api", "desc": "Katalog modul (butuh token)"},
     {"method": "GET", "path": "/api/download/tiktok", "desc": "Info unduhan TikTok: video tanpa watermark, MP3, foto carousel"},
     {"method": "GET", "path": "/api/download/tiktok/file", "desc": "Unduh file TikTok: video/MP3/foto pilihan (ZIP)/GIF dari Live Photo"},
+    {"method": "GET", "path": "/api/download/ytmp4", "desc": "Info + tautan video YouTube (terbatas: dinding bot YouTube, metadata via oEmbed)"},
+    {"method": "GET", "path": "/api/download/ytmp3", "desc": "Info + tautan audio YouTube (terbatas: metadata via oEmbed)"},
+    {"method": "GET", "path": "/api/download/ytmp3/file", "desc": "Konversi MP3 YouTube via server (butuh cookie sesi YouTube)"},
+    {"method": "GET", "path": "/api/download/ytpost", "desc": "Detail postingan komunitas YouTube: teks, gambar, author"},
+    {"method": "GET", "path": "/api/download/bilibili", "desc": "Info + tautan video Bilibili (terbatas: WAF Bilibili memblokir IP server)"},
+    {"method": "GET", "path": "/api/download/dailymotion", "desc": "Info + tautan video Dailymotion"},
+    {"method": "GET", "path": "/api/download/vimeo", "desc": "Info video Vimeo (terbatas: metadata via oEmbed, file butuh login)"},
+    {"method": "GET", "path": "/api/download/soundcloud", "desc": "Info + tautan stream audio SoundCloud"},
 ]
 
 # ----------------------------------------------------------------------------

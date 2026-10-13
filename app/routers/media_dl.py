@@ -204,15 +204,28 @@ def _pick_bestaudio(info: dict) -> dict | None:
     fmts = info.get("formats") or []
     auds = [f for f in fmts
             if f.get("acodec") != "none" and f.get("vcodec") == "none" and f.get("url")]
-    if auds:
-        a = max(auds, key=lambda f: (f.get("abr") or 0))
-        return {"url": a["url"], "ext": a.get("ext"),
+    # Utamakan file audio langsung (bukan manifest streaming).
+    direct = [f for f in auds if (f.get("protocol") or "https") in ("https", "http")]
+    if direct:
+        a = max(direct, key=lambda f: (f.get("abr") or 0))
+        return {"kind": "single", "url": a["url"], "ext": a.get("ext"),
                 "abr": a.get("abr"),
                 "filesize_approx": a.get("filesize") or a.get("filesize_approx")}
+    for f in auds:
+        proto = f.get("protocol") or ""
+        if "m3u8" in proto or "dash" in proto:
+            return {
+                "kind": "stream-manifest",
+                "url": f["url"], "ext": f.get("ext"), "abr": f.get("abr"),
+                "protocol": proto,
+                "note": ("Manifest streaming HLS/DASH — putar dengan player yang "
+                         "mendukungnya (mis. VLC), bukan file audio langsung."),
+            }
     # fallback: format utama bila tidak ada format audio-only
     url = info.get("url")
     if url:
-        return {"url": url, "ext": info.get("ext"), "abr": None, "filesize_approx": None}
+        return {"kind": "single", "url": url, "ext": info.get("ext"),
+                "abr": None, "filesize_approx": None}
     return None
 
 
@@ -453,8 +466,11 @@ async def download_soundcloud(url: str = Query(default="")):
     audio = _pick_bestaudio(info)
     if audio:
         result["audio"] = audio
-        result["note"] = ("audio_url adalah URL stream langsung dari SoundCloud "
-                          "(ber-token, masa berlaku pendek).")
+        if audio.get("kind") == "stream-manifest":
+            result["note"] = audio.pop("note")
+        else:
+            result["note"] = ("audio_url adalah URL stream langsung dari SoundCloud "
+                              "(ber-token, masa berlaku pendek).")
     else:
         dl = _best_download(info)
         if dl:
