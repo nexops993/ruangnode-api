@@ -27,6 +27,7 @@ from ..common import (
     upstream_fail,
     bad_request,
 )
+from .. import tiktok_sign
 from ..security import require_api_token
 
 router = APIRouter(prefix="/api/download", dependencies=[Depends(require_api_token)])
@@ -175,18 +176,85 @@ async def _get_tiktok_item(url: str) -> tuple[dict, dict, str]:
     except httpx.HTTPError as e:
         upstream_fail(f"Gagal menghubungi TikTok: {type(e).__name__}.")
     if not item:
-        # Fallback first-party: oEmbed resmi TikTok. TikTok TIDAK mengekspos
-        # data slide foto carousel ke halaman web publik (terverifikasi:
-        # tanpa itemStruct/og:image di semua varian UA) — untuk postingan
-        # foto, oEmbed hanya memberi judul, author, dan cover.
+        # Jalur API bertanda tangan (metode project open source
+        # Douyin_TikTok_Download_API, Apache-2.0): halaman publik TIDAK
+        # mengekspos data foto carousel, jadi untuk postingan foto datanya
+        # diambil dari API web internal TikTok yang disegel SDK webmssdk
+        # (X-Dynosaur + X-Gnarly, modul app/tiktok_sign.py). msToken TIDAK
+        # BOLEH dipalsukan — token palsu membuat TikTok membalas kosong;
+        # pakai msToken asli dari cookie sesi, atau kosongkan.
+        item_id = _extract_item_id(final_url, url)
+        if item_id:
+            signed_item = await _fetch_item_signed(item_id, cookie_header)
+            if signed_item:
+                return signed_item, _parse_tiktok_item(signed_item, final_url), cookie_header
+        # Fallback terakhir: oEmbed resmi TikTok (judul, author, cover saja;
+        # endpoint ini sendiri sering kena rate-limit dari IP datacenter).
         parsed = await _oembed_fallback(url)
         if parsed:
             return {}, parsed, cookie_header
         upstream_fail(
-            "Data postingan TikTok tidak ditemukan di halaman (struktur halaman "
-            "berubah atau postingan tidak publik)."
+            "Data postingan TikTok tidak ditemukan (postingan tidak publik, "
+            "sudah dihapus, atau dibatasi wilayah)."
         )
     return item, _parse_tiktok_item(item, final_url), cookie_header
+
+
+def _extract_item_id(*urls: str) -> str | None:
+    for u in urls:
+        m = re.search(r"/(?:video|photo)/(\d{10,})", u or "")
+        if m:
+            return m.group(1)
+    return None
+
+
+def _signed_base_pairs(item_id: str) -> list[tuple[str, str]]:
+    import random as _random
+    return [
+        ("aid", "1988"), ("app_language", "en"), ("app_name", "tiktok_web"),
+        ("browser_language", "en-US"), ("browser_name", "Mozilla"),
+        ("browser_online", "true"), ("browser_platform", "Win32"),
+        ("browser_version", "5.0 (Windows)"), ("channel", "tiktok_web"),
+        ("cookie_enabled", "true"),
+        ("device_id", str(_random.randint(10**18, 10**19 - 1))),
+        ("device_platform", "web_pc"), ("focus_state", "true"),
+        ("from_page", "user"), ("history_len", "4"), ("is_fullscreen", "false"),
+        ("is_page_visible", "true"), ("language", "en"), ("os", "windows"),
+        ("priority_region", "US"), ("referer", ""), ("region", "US"),
+        ("root_referer", "https://www.tiktok.com/"),
+        ("screen_height", "1080"), ("screen_width", "1920"),
+        ("tz_name", "America/Los_Angeles"), ("webcast_language", "en"),
+        ("itemId", item_id),
+    ]
+
+
+async def _fetch_item_signed(item_id: str, cookie_header: str) -> dict | None:
+    m = re.search(r"msToken=([^;]+)", cookie_header or "")
+    ms_token = m.group(1) if m else ""
+    try:
+        signed_query, _ = tiktok_sign.sign(
+            _signed_base_pairs(item_id),
+            DEFAULT_HEADERS["User-Agent"],
+            ms_token=ms_token,
+        )
+        headers = {**DEFAULT_HEADERS, **TIKTOK_REFERER,
+                   "Accept": "application/json, text/plain, */*"}
+        if cookie_header:
+            headers["Cookie"] = cookie_header
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30.0,
+                                     trust_env=False) as client:
+            resp = await client.get(
+                "https://www.tiktok.com/api/item/detail/?" + signed_query,
+                headers=headers,
+            )
+            if resp.status_code != 200 or not resp.content:
+                return None
+            data = resp.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+    if data.get("statusCode") not in (0, None):
+        return None
+    return (data.get("itemInfo") or {}).get("itemStruct")
 
 
 async def _oembed_fallback(url: str) -> dict | None:
