@@ -306,12 +306,17 @@ async def download_uploadhaven(url: str = Query(default="")):
         bad_request("URL bukan tautan unduh UploadHaven "
                     "(format: https://uploadhaven.com/download/XXXX).")
     html, final_url = await fetch_text(url, headers=NAV_HEADERS)
-    name = re.search(r'uh-dl-fname[^>]*>([^<]+)<', html)
+    fname = None
+    for nm in re.finditer(r'uh-dl-fname[^>]*>\s*([^<>]+?)\s*<', html):
+        cand = ihtml.unescape(nm.group(1)).strip()
+        if cand:
+            fname = cand
+            break
     size = re.search(r'(\d+(?:\.\d+)?\s*(?:MB|GB|KB))', html)
-    if not name:
+    if not fname:
         upstream_fail("File UploadHaven tidak ditemukan (tautan salah/kedaluwarsa).")
     return ok({
-        "filename": ihtml.unescape(name.group(1)).strip(),
+        "filename": fname,
         "size": size.group(1) if size else None,
         "webpage_url": final_url,
         "download": None,
@@ -398,6 +403,8 @@ async def download_mega(url: str = Query(default="")):
     url = require_url(url)
     if "mega." "nz" not in url and "mega." "co.nz" not in url:
         bad_request("URL bukan tautan Mega.")
+    if "#" not in url and "!" not in url:
+        bad_request("Tautan Mega tidak memuat kunci dekripsi (#...).")
     try:
         info = await asyncio.to_thread(_mega_info_sync, url)
     except Exception as e:  # noqa: BLE001
