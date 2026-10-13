@@ -67,7 +67,6 @@ async def _download(url: str, max_bytes: int = MAX_MEDIA_BYTES,
         "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,"
                    "image/avif,image/webp,image/apng,*/*;q=0.8"),
         "Accept-Language": "en-US,en;q=0.9,id;q=0.8",
-        "Sec-Fetch-Mode": "no-cors",
     }
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=timeout,
