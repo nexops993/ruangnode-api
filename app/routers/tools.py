@@ -62,10 +62,17 @@ async def _download(url: str, max_bytes: int = MAX_MEDIA_BYTES,
                     timeout: float = 60.0) -> bytes:
     """Unduh berkas; gagal -> 502 jujur."""
     url = require_url(url)
+    headers = {
+        "User-Agent": UA,
+        "Accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,"
+                   "image/avif,image/webp,image/apng,*/*;q=0.8"),
+        "Accept-Language": "en-US,en;q=0.9,id;q=0.8",
+        "Sec-Fetch-Mode": "no-cors",
+    }
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=timeout,
                                      trust_env=False) as client:
-            resp = await client.get(url, headers={"User-Agent": UA})
+            resp = await client.get(url, headers=headers)
             resp.raise_for_status()
             data = resp.content
     except httpx.HTTPStatusError as e:
@@ -663,7 +670,8 @@ async def t_cleanuri(url: str = Query(default="")):
         data = resp.json()
         short = data["result_url"]
     except (ValueError, KeyError):
-        upstream_fail("CleanURI menolak permintaan (layanan membatasi akses server).")
+        upstream_fail("CleanURI menolak permintaan dari IP server "
+                      "(API gratis CleanURI membatasi akses datacenter).")
     return ok({"original": url, "short": short, "service": "cleanuri"})
 
 
