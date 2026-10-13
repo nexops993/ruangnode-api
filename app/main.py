@@ -59,7 +59,7 @@ app.include_router(host_dl_router.router)
 # Data katalog (modul dibangun per kategori sampai tuntas)
 # ----------------------------------------------------------------------------
 CATEGORIES = [
-    {"name": "Download", "icon": "download", "planned": 29, "status": "segera",
+    {"name": "Download", "icon": "download", "planned": 29, "status": "aktif",
      "desc": "Unduh video, audio, dan foto dari berbagai platform — diawali TikTok: tanpa watermark, MP3, carousel selektif, GIF."},
     {"name": "AI", "icon": "ai", "planned": 21, "status": "segera",
      "desc": "Chat AI, generator dan editor gambar, text-to-speech, text-to-video."},
