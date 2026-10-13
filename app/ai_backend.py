@@ -64,8 +64,10 @@ async def nine_chat(messages: list[dict], model: str, max_tokens: int = 1024,
         upstream_fail(f"Gateway 9Router membalas HTTP {resp.status_code}.")
     try:
         data = resp.json()
-        return data["choices"][0]["message"]["content"].strip()
-    except (KeyError, IndexError, ValueError):
+        # 9Router membungkus respons OpenAI dalam kunci "data".
+        payload = data.get("data", data)
+        return payload["choices"][0]["message"]["content"].strip()
+    except (KeyError, IndexError, ValueError, AttributeError):
         upstream_fail("Respons gateway 9Router tidak terduga.")
 
 
