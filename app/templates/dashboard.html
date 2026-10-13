@@ -1,64 +1,64 @@
 {% extends "base.html" %}
 {% block title %}Dashboard · RuangNode API{% endblock %}
 {% block nav %}
-<a class="navlink" href="/">Dashboard</a>
-<a class="navlink" href="/docs">Dokumentasi</a>
-<a class="navlink" href="/logout">Keluar</a>
+<a class="link" href="/">Dashboard</a>
+<a class="link" href="/docs">Dokumentasi</a>
+<a class="link keep" href="/logout">Keluar</a>
 {% endblock %}
 {% block content %}
-<div class="card hero">
-  <div class="emoji">🚀</div>
-  <h1>Selamat datang di RuangNode API</h1>
-  <p>Token valid — kamu sudah masuk. Ini pusat kendali REST API pribadimu.
-     <span class="badge live">Fase Website</span></p>
+<div class="row" style="justify-content:space-between;margin-top:6px">
+  <h1 style="margin:0">Dashboard</h1>
+  <span class="badge live">{{ phase }}</span>
 </div>
+<p style="margin-top:6px">Kamu sudah masuk dengan Access Token. Ini pusat kendali RuangNode API.</p>
 
-<div class="stats">
-  <div class="card stat"><div class="num">{{ categories|length }}</div><div class="lbl">Kategori Modul</div></div>
-  <div class="card stat"><div class="num">{{ planned_total }}</div><div class="lbl">Endpoint Rencana</div></div>
-  <div class="card stat"><div class="num">{{ active|length }}</div><div class="lbl">Endpoint Aktif</div></div>
-  <div class="card stat"><div class="num">🔒</div><div class="lbl">Gerbang Token Aktif</div></div>
+<section class="card stats" aria-label="Statistik">
+  <div class="stat"><div class="num">{{ categories|length }}</div><div class="lbl">Kategori Modul</div></div>
+  <div class="stat"><div class="num">{{ planned_total }}</div><div class="lbl">Endpoint Rencana</div></div>
+  <div class="stat"><div class="num">{{ active|length }}</div><div class="lbl">Endpoint Aktif</div></div>
+  <div class="stat"><div class="num">Aktif</div><div class="lbl">Gerbang Token</div></div>
+</section>
+
+<div class="row" style="justify-content:space-between;margin:22px 2px 4px">
+  <h2>Peta Modul</h2>
+  <span class="count">per kategori sampai tuntas 100%</span>
 </div>
-
-<div class="card">
-  <h2>🗂️ Peta Modul</h2>
-  <p>Modul dibangun per kategori sampai tuntas 100% sebelum pindah ke kategori berikutnya.</p>
-  <div class="grid">
-    {% for c in categories %}
-    <div class="card mod">
-      <h3>{{ c.name }}</h3>
-      <div class="count">{{ c.planned }} endpoint direncanakan</div>
-      <p style="font-size:14px">{{ c.desc }}</p>
-      <span class="badge soon">Segera</span>
-    </div>
-    {% endfor %}
+<p style="margin:0 2px 12px">Modul dibangun satu kategori penuh sebelum pindah ke kategori berikutnya.</p>
+<div class="grid">
+  {% for c in categories %}
+  <div class="card mod">
+    <div class="tile t-{{ c.icon }}">{{ icon(c.icon, 21) }}</div>
+    <h3>{{ c.name }}</h3>
+    <p>{{ c.desc }}</p>
+    <div class="foot"><span class="count">{{ c.planned }} endpoint</span><span class="badge soon">Segera</span></div>
   </div>
+  {% endfor %}
 </div>
 
 <div class="card">
-  <h2>⚡ Endpoint Aktif</h2>
+  <h2>Endpoint Aktif</h2>
   <table>
     <tr><th>Method</th><th>Path</th><th>Keterangan</th></tr>
     {% for e in active %}
-    <tr><td>{{ e.method }}</td><td>{{ e.path }}</td><td>{{ e.desc }}</td></tr>
+    <tr><td class="mono">{{ e.method }}</td><td class="mono">{{ e.path }}</td><td>{{ e.desc }}</td></tr>
     {% endfor %}
   </table>
 </div>
 
 <div class="card">
-  <h2>🔑 Cara Memakai Token di API</h2>
+  <h2>Cara Memakai Token di API</h2>
   <p>Tiga cara, pilih salah satu:</p>
-  <pre>curl -H "X-Access-Token: TOKEN_KAMU" https://api.ruangnode.me/api
-# atau
+  <pre><code>curl -H "X-Access-Token: TOKEN_KAMU" https://api.ruangnode.me/api
+
 curl -H "Authorization: Bearer TOKEN_KAMU" https://api.ruangnode.me/api
-# atau
-curl "https://api.ruangnode.me/api?token=TOKEN_KAMU"</pre>
+
+curl "https://api.ruangnode.me/api?token=TOKEN_KAMU"</code></pre>
   <p>Respons sukses selalu memakai envelope seragam:</p>
-  <pre>{
+  <pre><code>{
   "status": true,
   "creator": "RuangNode",
   "result": { ... }
-}</pre>
-  <div class="row"><a class="btn ghost" href="/docs">Buka Dokumentasi Lengkap</a></div>
+}</code></pre>
+  <div class="row"><a class="btn ghost sm" href="/docs">{{ icon("book", 16) }} Dokumentasi Lengkap</a></div>
 </div>
 {% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Login · RuangNode API{% endblock %}
+{% block nav %}
+<a class="link keep" href="/">Beranda</a>
+{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="card login-card">
+    <div class="tile t-download" style="margin-bottom:14px">{{ icon("lock", 21) }}</div>
+    <h1>Login</h1>
+    <p>Masukkan Access Token untuk membuka dashboard dan dokumentasi.</p>
+    {% if error %}
+    <div class="err">{{ icon("info", 17) }}<span>{{ error }}</span></div>
+    {% endif %}
+    <form method="post" action="/login">
+      <input class="token" type="password" name="token" placeholder="Access Token" autocomplete="off" required autofocus>
+      <button class="btn block" type="submit">Masuk {{ icon("arrow", 17) }}</button>
+    </form>
+    <div class="note">{{ icon("shield", 16) }}<span>Sesi berlaku 7 hari di perangkat ini setelah token benar.
+       Token boleh ditempel apa adanya — spasi dan baris baru dari salinan chat otomatis dibersihkan.</span></div>
+  </div>
+  <p class="center" style="font-size:13.5px"><a href="/">&larr; Kembali ke beranda</a></p>
+</div>
+{% endblock %}

@@ -1,21 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Dokumentasi · RuangNode API{% endblock %}
 {% block nav %}
-<a class="navlink" href="/">Dashboard</a>
-<a class="navlink" href="/docs">Dokumentasi</a>
-<a class="navlink" href="/logout">Keluar</a>
+<a class="link" href="/">Dashboard</a>
+<a class="link" href="/docs">Dokumentasi</a>
+<a class="link keep" href="/logout">Keluar</a>
 {% endblock %}
 {% block content %}
-<div class="card">
-  <h1>📖 Dokumentasi</h1>
-  <p>Base URL: <code>https://api.ruangnode.me</code> · Bahasa: Bahasa Indonesia · Format: JSON</p>
-</div>
+<h1 style="margin-top:6px">Dokumentasi</h1>
+<p>Base URL: <code>https://api.ruangnode.me</code> · Format: JSON · Bahasa: Bahasa Indonesia</p>
 
 <div class="card">
   <h2>1. Gerbang Access Token</h2>
-  <p>Website ini terkunci penuh. Tanpa Access Token, pengunjung hanya melihat layar kunci dan
-     tidak bisa melakukan request API apa pun. Setelah token benar dimasukkan di layar kunci,
-     server menerbitkan cookie sesi bertanda tangan (berlaku 7 hari, <code>httpOnly</code>).</p>
+  <p>Seluruh dashboard, halaman ini, dan semua request API hanya bisa diakses dengan Access Token.
+     Beranda publik hanya menampilkan gambaran umum. Setelah login berhasil, server menerbitkan
+     cookie sesi bertanda tangan (berlaku 7 hari, <code>httpOnly</code>).</p>
 </div>
 
 <div class="card">
@@ -23,65 +21,62 @@
   <p>Setiap request ke <code>/api/*</code> (kecuali <code>/api/health</code>) wajib menyertakan token lewat salah satu cara:</p>
   <table>
     <tr><th>Cara</th><th>Contoh</th></tr>
-    <tr><td>Header</td><td><code>X-Access-Token: TOKEN_KAMU</code></td></tr>
-    <tr><td>Header</td><td><code>Authorization: Bearer TOKEN_KAMU</code></td></tr>
-    <tr><td>Query</td><td><code>?token=TOKEN_KAMU</code></td></tr>
+    <tr><td>Header</td><td class="mono">X-Access-Token: TOKEN_KAMU</td></tr>
+    <tr><td>Header</td><td class="mono">Authorization: Bearer TOKEN_KAMU</td></tr>
+    <tr><td>Query</td><td class="mono">?token=TOKEN_KAMU</td></tr>
   </table>
 </div>
 
 <div class="card">
   <h2>3. Format Respons</h2>
   <p>Sukses:</p>
-  <pre>{
+  <pre><code>{
   "status": true,
   "creator": "RuangNode",
-  "result": {
-    "phase": "Fase Website",
-    "categories": [ ... ]
-  }
-}</pre>
+  "result": { ... }
+}</code></pre>
   <p>Gagal (contoh token salah):</p>
-  <pre>{
+  <pre><code>{
   "status": false,
   "creator": "RuangNode",
   "message": "Unauthorized: Access Token tidak ada atau salah."
-}</pre>
+}</code></pre>
 </div>
 
 <div class="card">
   <h2>4. Contoh Request</h2>
-  <pre>curl -s "https://api.ruangnode.me/api" \
-  -H "X-Access-Token: TOKEN_KAMU" | python3 -m json.tool
+  <pre><code>curl -s "https://api.ruangnode.me/api" \
+  -H "X-Access-Token: TOKEN_KAMU"
 
 # cek liveness (publik, tanpa token)
-curl -s https://api.ruangnode.me/api/health</pre>
+curl -s https://api.ruangnode.me/api/health</code></pre>
 </div>
 
 <div class="card">
   <h2>5. Kode Error</h2>
   <table>
     <tr><th>Kode</th><th>Arti</th><th>Penyebab umum</th></tr>
-    <tr><td>401</td><td>Unauthorized</td><td>Token tidak disertakan atau salah</td></tr>
-    <tr><td>404</td><td>Not Found</td><td>Path endpoint tidak ada</td></tr>
-    <tr><td>429</td><td>Too Many Requests</td><td>Terlalu banyak request (bila rate limit diaktifkan)</td></tr>
-    <tr><td>500</td><td>Internal Server Error</td><td>Kesalahan tak terduga di server</td></tr>
+    <tr><td class="mono">401</td><td>Unauthorized</td><td>Token tidak disertakan atau salah</td></tr>
+    <tr><td class="mono">404</td><td>Not Found</td><td>Path endpoint tidak ada</td></tr>
+    <tr><td class="mono">429</td><td>Too Many Requests</td><td>Terlalu banyak request (bila rate limit diaktifkan)</td></tr>
+    <tr><td class="mono">500</td><td>Internal Server Error</td><td>Kesalahan tak terduga di server</td></tr>
   </table>
 </div>
 
 <div class="card">
   <h2>6. Peta Modul</h2>
   <table>
-    <tr><th>Kategori</th><th>Endpoint Rencana</th><th>Status</th></tr>
+    <tr><th>Kategori</th><th>Rencana</th><th>Status</th></tr>
     {% for c in categories %}
-    <tr><td>{{ c.name }}</td><td>{{ c.planned }}</td><td><span class="badge soon">Segera</span></td></tr>
+    <tr><td>{{ c.name }}</td><td class="mono">{{ c.planned }} endpoint</td><td><span class="badge soon">Segera</span></td></tr>
     {% endfor %}
-    <tr><td><b>Total</b></td><td><b>{{ planned_total }}</b></td><td></td></tr>
+    <tr><td><b>Total</b></td><td class="mono"><b>{{ planned_total }}</b></td><td></td></tr>
   </table>
-  <p>Endpoint aktif saat ini:</p>
+  <p style="margin-top:14px">Endpoint aktif saat ini:</p>
   <table>
     <tr><th>Method</th><th>Path</th><th>Keterangan</th></tr>
     {% for e in active %}
-    <tr><td>{{ e.method }}</td><td>{{ e.path }}</td><td>{{ e.desc }}</td></tr>
+    <tr><td class="mono">{{ e.method }}</td><td class="mono">{{ e.path }}</td><td>{{ e.desc }}</td></tr>
     {% endfor %}
   </table>
 </div>

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}RuangNode API — REST API Pribadi{% endblock %}
+{% block nav %}
+<a class="link" href="#modul">Modul</a>
+<a class="link" href="#akses">Cara Akses</a>
+<a class="btn sm" href="/login">{{ icon("key", 16) }} Login</a>
+{% endblock %}
+{% block content %}
+<section class="card" style="padding:30px 24px">
+  <span class="eyebrow">{{ icon("shield", 14) }} REST API Pribadi</span>
+  <h1>RuangNode API</h1>
+  <p class="lead">Satu payung API untuk banyak modul — Download, AI, Tools, Stalk, dan lainnya.
+     Semua endpoint terkunci Access Token, tanpa kecuali.</p>
+  <div class="row" style="margin-top:16px">
+    <a class="btn" href="/login">Login {{ icon("arrow", 17) }}</a>
+    <a class="btn ghost" href="#modul">Lihat Modul</a>
+  </div>
+  <div class="note">{{ icon("lock", 16) }}<span>Tanpa token, tidak ada yang bisa dibuka: dashboard, dokumentasi,
+     dan seluruh request API ditolak server.</span></div>
+</section>
+
+<section class="card stats" aria-label="Statistik">
+  <div class="stat"><div class="num">{{ categories|length }}</div><div class="lbl">Kategori Modul</div></div>
+  <div class="stat"><div class="num">{{ planned_total }}</div><div class="lbl">Endpoint Rencana</div></div>
+  <div class="stat"><div class="num">{{ active|length }}</div><div class="lbl">Endpoint Aktif</div></div>
+  <div class="stat"><div class="num">1</div><div class="lbl">Access Token</div></div>
+</section>
+
+<section id="modul" style="scroll-margin-top:84px">
+  <div class="row" style="justify-content:space-between;margin:22px 2px 4px">
+    <h2>Peta Modul</h2>
+    <span class="count">dibangun per kategori, tuntas 100%</span>
+  </div>
+  <p style="margin:0 2px 12px">Delapan kategori dari katalog referensi, dibangun satu per satu sampai selesai seluruh endpoint-nya.</p>
+  <div class="grid">
+    {% for c in categories %}
+    <div class="card mod">
+      <div class="tile t-{{ c.icon }}">{{ icon(c.icon, 21) }}</div>
+      <h3>{{ c.name }}</h3>
+      <p>{{ c.desc }}</p>
+      <div class="foot"><span class="count">{{ c.planned }} endpoint</span><span class="badge soon">Segera</span></div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="akses" class="card" style="scroll-margin-top:84px">
+  <h2>Cara Akses</h2>
+  <p>Tiga langkah, tidak ada pendaftaran dan tidak ada akun.</p>
+  <div class="steps" style="margin-top:14px">
+    <div class="step"><span class="n">1</span><p><b>Login dengan token</b><br>
+      Pemilik memasukkan Access Token di halaman login untuk membuka dashboard &amp; dokumentasi.</p></div>
+    <div class="step"><span class="n">2</span><p><b>Sertakan di request</b><br>
+      Setiap panggilan API membawa token lewat header <code>X-Access-Token</code> atau query <code>?token=</code>.</p></div>
+    <div class="step"><span class="n">3</span><p><b>Terima JSON seragam</b><br>
+      Semua respons memakai envelope yang sama: status, creator, dan result.</p></div>
+  </div>
+  <pre><code>curl -H "X-Access-Token: TOKEN_KAMU" https://api.ruangnode.me/api</code></pre>
+</section>
+
+<section class="card center" style="padding:26px 22px">
+  <h2>Sudah punya Access Token?</h2>
+  <p>Masuk untuk membuka dashboard dan dokumentasi lengkap.</p>
+  <a class="btn" href="/login" style="margin-top:6px">{{ icon("key", 17) }} Login</a>
+</section>
+{% endblock %}

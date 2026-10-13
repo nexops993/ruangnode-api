@@ -1,12 +1,14 @@
 """RuangNode API — website + gerbang Access Token (fase website).
 
-Tanpa Access Token yang benar, tidak ada halaman yang terlihat dan tidak ada
-request API yang dilayani. /api/health adalah satu-satunya endpoint publik.
+Beranda bersifat publik (landing page + tombol Login). Dashboard, dokumentasi,
+dan semua request API hanya bisa diakses dengan Access Token yang benar.
+Satu-satunya endpoint API publik adalah /api/health (cek liveness).
 """
 
 import hashlib
 import hmac
 import os
+import re
 import time
 
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -34,7 +36,7 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 app = FastAPI(
     title="RuangNode API",
-    docs_url=None,      # dimatikan: dokumentasi publik tidak boleh bocor
+    docs_url=None,      # dokumentasi bawaan FastAPI dimatikan
     redoc_url=None,
     openapi_url=None,
 )
@@ -43,22 +45,22 @@ app = FastAPI(
 # Data katalog (fase website: statis; modul dibangun menyusul per kategori)
 # ----------------------------------------------------------------------------
 CATEGORIES = [
-    {"name": "Download", "planned": 29, "status": "segera",
-     "desc": "Unduh video/audio/foto dari berbagai platform — diawali modul TikTok (tanpa watermark, MP3, carousel selektif, GIF)."},
-    {"name": "AI", "planned": 21, "status": "segera",
-     "desc": "Chat AI, generator & editor gambar, text-to-speech, text-to-video."},
-    {"name": "Tools", "planned": 43, "status": "segera",
-     "desc": "OCR, konverter, QR, shortener, screenshot web, temp mail, info PDF."},
-    {"name": "Stalk", "planned": 26, "status": "segera",
-     "desc": "Intip profil publik dari puluhan platform sosial & game."},
-    {"name": "Pterodactyl", "planned": 18, "status": "segera",
+    {"name": "Download", "icon": "download", "planned": 29, "status": "segera",
+     "desc": "Unduh video, audio, dan foto dari berbagai platform — diawali TikTok: tanpa watermark, MP3, carousel selektif, GIF."},
+    {"name": "AI", "icon": "ai", "planned": 21, "status": "segera",
+     "desc": "Chat AI, generator dan editor gambar, text-to-speech, text-to-video."},
+    {"name": "Tools", "icon": "tools", "planned": 43, "status": "segera",
+     "desc": "OCR, konverter, QR, shortener, screenshot web, temp mail, olah PDF."},
+    {"name": "Stalk", "icon": "stalk", "planned": 26, "status": "segera",
+     "desc": "Lihat profil publik dari puluhan platform sosial dan game."},
+    {"name": "Pterodactyl", "icon": "ptero", "planned": 18, "status": "segera",
      "desc": "Kelola panel game server: server, user, suspend, restart."},
-    {"name": "RE", "planned": 12, "status": "segera",
-     "desc": "Reverse engineering: analisis APK/IPA, deobfuscator, SSL pinning inspector."},
-    {"name": "Info", "planned": 8, "status": "segera",
+    {"name": "RE", "icon": "re", "planned": 12, "status": "segera",
+     "desc": "Reverse engineering: analisis APK/IPA, deobfuscator, inspeksi SSL pinning."},
+    {"name": "Info", "icon": "info", "planned": 8, "status": "segera",
      "desc": "IP lookup, DNS, WHOIS, cek SSL, status website."},
-    {"name": "Maker", "planned": 6, "status": "segera",
-     "desc": "Generator teks & gambar: brat, carbon snippet, quote canvas."},
+    {"name": "Maker", "icon": "maker", "planned": 6, "status": "segera",
+     "desc": "Generator teks dan gambar: brat, carbon snippet, quote canvas."},
 ]
 PLANNED_TOTAL = sum(c["planned"] for c in CATEGORIES)
 ACTIVE_ENDPOINTS = [
@@ -69,6 +71,16 @@ ACTIVE_ENDPOINTS = [
 # ----------------------------------------------------------------------------
 # Helper keamanan
 # ----------------------------------------------------------------------------
+def clean_token(value: str | None) -> str:
+    """Buang SEMUA whitespace (spasi, baris baru, tab) dari token.
+
+    Token yang disalin dari chat sering membawa baris baru di tengah atau
+    spasi tak terlihat; membersihkan semuanya membuat tempelan apa adanya
+    dari WhatsApp tetap terbaca benar.
+    """
+    return re.sub(r"\s+", "", value or "")
+
+
 def _sign(ts: str) -> str:
     return hmac.new(SESSION_SECRET.encode(), ts.encode(), hashlib.sha256).hexdigest()
 
@@ -100,10 +112,10 @@ def token_from_request(request: Request) -> str | None:
     if not token:
         auth = request.headers.get("Authorization", "")
         if auth.startswith("Bearer "):
-            token = auth[7:].strip()
+            token = auth[7:]
     if not token:
         token = request.query_params.get("token")
-    return token
+    return clean_token(token) or None
 
 
 def require_api_token(request: Request) -> None:
@@ -131,32 +143,34 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 # ----------------------------------------------------------------------------
-# Halaman web (semuanya di balik gerbang token)
+# Halaman web
 # ----------------------------------------------------------------------------
-def lock_context(request: Request, error: str | None = None) -> dict:
-    return {"request": request, "error": error}
+def catalog_context(request: Request) -> dict:
+    return {
+        "request": request,
+        "categories": CATEGORIES,
+        "planned_total": PLANNED_TOTAL,
+        "active": ACTIVE_ENDPOINTS,
+        "phase": "Fase Website",
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     if page_allowed(request):
-        return templates.TemplateResponse(
-            request,
-            "dashboard.html",
-            {
-                "request": request,
-                "categories": CATEGORIES,
-                "planned_total": PLANNED_TOTAL,
-                "active": ACTIVE_ENDPOINTS,
-                "phase": "Fase Website",
-            },
-        )
-    return templates.TemplateResponse(request, "lock.html", lock_context(request))
+        return templates.TemplateResponse(request, "dashboard.html", catalog_context(request))
+    return templates.TemplateResponse(request, "landing.html", catalog_context(request))
 
 
-@app.post("/unlock", response_class=HTMLResponse)
-async def unlock(request: Request, token: str = Form(default="")):
-    t = (token or "").strip()
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    if page_allowed(request):
+        return RedirectResponse("/", status_code=303)
+    return templates.TemplateResponse(request, "login.html", {"request": request, "error": None})
+
+
+async def _do_login(request: Request, token: str):
+    t = clean_token(token)
     if t and hmac.compare_digest(t, ACCESS_TOKEN):
         resp = RedirectResponse("/", status_code=303)
         resp.set_cookie(
@@ -170,10 +184,21 @@ async def unlock(request: Request, token: str = Form(default="")):
         return resp
     return templates.TemplateResponse(
         request,
-        "lock.html",
-        lock_context(request, error="Token salah. Periksa kembali Access Token kamu."),
+        "login.html",
+        {"request": request, "error": "Token salah. Periksa kembali Access Token kamu."},
         status_code=401,
     )
+
+
+@app.post("/login", response_class=HTMLResponse)
+async def login_submit(request: Request, token: str = Form(default="")):
+    return await _do_login(request, token)
+
+
+@app.post("/unlock", response_class=HTMLResponse)
+async def unlock_alias(request: Request, token: str = Form(default="")):
+    # Alias lama (fase layar kunci) — diarahkan ke logika login yang sama.
+    return await _do_login(request, token)
 
 
 @app.get("/logout")
@@ -186,17 +211,8 @@ async def logout():
 @app.get("/docs", response_class=HTMLResponse)
 async def docs(request: Request):
     if not page_allowed(request):
-        return templates.TemplateResponse(request, "lock.html", lock_context(request))
-    return templates.TemplateResponse(
-        request,
-        "docs.html",
-        {
-            "request": request,
-            "categories": CATEGORIES,
-            "planned_total": PLANNED_TOTAL,
-            "active": ACTIVE_ENDPOINTS,
-        },
-    )
+        return RedirectResponse("/login", status_code=303)
+    return templates.TemplateResponse(request, "docs.html", catalog_context(request))
 
 
 # ----------------------------------------------------------------------------

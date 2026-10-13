@@ -4,102 +4,128 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}RuangNode API{% endblock %}</title>
+<meta name="description" content="RuangNode API — REST API pribadi multi-modul, terkunci Access Token.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --text:#3b3550; --muted:#7c7594; --accent:#7c6cf0; --accent2:#ff9d76;
-    --mint:#bfe9d2; --peach:#ffd9c2; --lav:#ddd3f7;
+    --bg:#f4f2fa; --card:#ffffff; --ink:#2c2842; --muted:#6e6884;
+    --accent:#6c5ce7; --accent-dark:#5748c9; --line:rgba(44,40,66,.08);
+    --soon-bg:#fff3e2; --soon-tx:#99600f; --live-bg:#e2f4e8; --live-tx:#1d6b43;
+    --shadow:0 8px 24px rgba(108,92,231,.07),0 2px 6px rgba(44,40,66,.05),inset 0 1px 0 rgba(255,255,255,.9);
   }
   *{box-sizing:border-box}
-  body{
-    margin:0; color:var(--text);
-    font-family:"Plus Jakarta Sans",system-ui,sans-serif;
-    background:
-      radial-gradient(900px 500px at 8% -5%, #efe9fd 0%, transparent 60%),
-      radial-gradient(800px 480px at 105% 10%, #dff3e6 0%, transparent 60%),
-      radial-gradient(900px 520px at 50% 115%, #fde9d7 0%, transparent 60%),
-      linear-gradient(160deg,#f4f1fc 0%,#eef7f1 55%,#fdf3ea 100%);
-    min-height:100vh;
-  }
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;
+    font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
   a{color:var(--accent);text-decoration:none}
-  .wrap{max-width:1060px;margin:0 auto;padding:0 20px 64px}
-  header.glass{
-    position:sticky;top:0;z-index:50;
-    background:rgba(255,255,255,.55);
-    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    border-bottom:1px solid rgba(255,255,255,.7);
-  }
-  header .bar{max-width:1060px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px}
-  .logo{font-weight:800;font-size:20px;letter-spacing:.2px}
-  .logo span{color:var(--accent)}
-  nav{margin-left:auto;display:flex;gap:10px;align-items:center}
-  nav a.navlink{font-weight:700;color:var(--text);padding:10px 16px;border-radius:14px;background:rgba(255,255,255,.6);
-    box-shadow:3px 3px 8px rgba(163,177,198,.35),-3px -3px 8px rgba(255,255,255,.9)}
-  nav a.navlink:hover{background:#fff}
-  .btn{
-    display:inline-block;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:16px;
-    color:#fff;background:linear-gradient(135deg,var(--accent),#5a4bd6);
-    padding:14px 30px;border-radius:20px;
-    box-shadow:6px 6px 16px rgba(124,108,240,.4),-4px -4px 10px rgba(255,255,255,.8),
-      inset 2px 2px 4px rgba(255,255,255,.35);
-    transition:transform .08s ease;
-  }
-  .btn:active{transform:translateY(2px);
-    box-shadow:inset 4px 4px 10px rgba(0,0,0,.18),inset -3px -3px 8px rgba(255,255,255,.25)}
-  .btn.ghost{background:#fff;color:var(--accent);
-    box-shadow:5px 5px 12px rgba(163,177,198,.4),-4px -4px 10px rgba(255,255,255,.9)}
-  .card{
-    background:rgba(255,255,255,.88);border-radius:28px;padding:28px;margin:22px 0;
-    box-shadow:10px 10px 26px rgba(163,177,198,.38),-10px -10px 26px rgba(255,255,255,.95),
-      inset 2px 2px 6px rgba(255,255,255,.9),inset -2px -2px 6px rgba(163,177,198,.16);
-  }
-  h1{font-size:40px;margin:6px 0 10px;letter-spacing:-.5px}
-  h2{font-size:24px;margin:0 0 12px}
-  h3{margin:0 0 8px}
-  p{line-height:1.7;color:var(--muted)}
-  .hero{text-align:center;padding:56px 30px}
-  .hero .emoji{font-size:54px}
-  input.token{
-    width:100%;font-family:"JetBrains Mono",monospace;font-size:16px;color:var(--text);
-    padding:16px 20px;border:0;border-radius:18px;background:#f3f0fd;outline:none;
-    box-shadow:inset 5px 5px 12px rgba(163,177,198,.4),inset -5px -5px 12px rgba(255,255,255,.95);
-  }
-  input.token:focus{background:#fff}
-  .err{background:#ffe4e0;color:#b3261e;font-weight:700;border-radius:16px;padding:12px 18px;margin:14px 0}
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px}
-  .stat{text-align:center;padding:22px 12px}
-  .stat .num{font-size:38px;font-weight:800;color:var(--accent)}
-  .stat .lbl{font-weight:700;color:var(--muted);font-size:14px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
-  .mod{padding:22px}
-  .mod .count{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--muted)}
-  .badge{display:inline-block;font-size:12px;font-weight:800;padding:6px 14px;border-radius:999px;margin-top:10px}
-  .soon{background:var(--peach);color:#a34d1f}
-  .live{background:var(--mint);color:#1d6b43}
+  .wrap{max-width:1040px;margin:0 auto;padding:20px 16px 56px}
+  /* header */
+  header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.78);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line)}
+  .bar{max-width:1040px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px;color:var(--ink);font-weight:800;font-size:17px;letter-spacing:-.01em}
+  .brand .mark{width:34px;height:34px;border-radius:10px;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex:none}
+  .brand em{font-style:normal;color:var(--accent)}
+  nav{margin-left:auto;display:flex;align-items:center;gap:4px}
+  nav a.link{color:var(--ink);font-weight:600;font-size:14.5px;padding:8px 10px;border-radius:10px}
+  nav a.link:hover{background:rgba(108,92,231,.08)}
+  @media (max-width:560px){ nav a.link{display:none} nav a.link.keep{display:block} }
+  /* tombol */
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;font-family:inherit;
+    font-weight:700;font-size:15px;color:#fff;background:var(--accent);
+    padding:11px 20px;border-radius:12px;box-shadow:0 6px 16px rgba(108,92,231,.28);
+    transition:background .15s ease,transform .1s ease}
+  .btn:hover{background:var(--accent-dark)}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow)}
+  .btn.ghost:hover{background:#fbfaff}
+  .btn.sm{padding:9px 16px;font-size:14px;border-radius:11px}
+  .btn.block{width:100%;justify-content:center}
+  /* kartu & tipografi */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    box-shadow:var(--shadow);padding:22px;margin:16px 0}
+  h1{font-size:clamp(1.55rem,5.2vw,2.25rem);line-height:1.15;margin:0 0 8px;letter-spacing:-.02em;font-weight:800}
+  h2{font-size:1.16rem;margin:0 0 6px;letter-spacing:-.01em}
+  h3{font-size:1rem;margin:0 0 4px}
+  p{margin:0 0 10px;color:var(--muted)}
+  p.lead{font-size:16px;max-width:560px}
+  .eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--accent);
+    background:rgba(108,92,231,.09);padding:6px 12px;border-radius:999px;margin-bottom:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .note{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;color:var(--muted);margin-top:16px}
+  .note svg{flex:none;margin-top:1px;color:var(--accent)}
+  /* statistik ringkas */
+  .stats{display:flex;flex-wrap:wrap;gap:8px 0;padding:16px 22px}
+  .stat{flex:1 1 120px;text-align:center;padding:4px 8px}
+  .stat + .stat{border-left:1px solid var(--line)}
+  .stat .num{font-size:21px;font-weight:800;letter-spacing:-.01em}
+  .stat .lbl{font-size:12.5px;color:var(--muted);font-weight:600}
+  /* grid modul */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+  @media (min-width:760px){ .grid{grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:14px} }
+  .mod{padding:16px;margin:0;display:flex;flex-direction:column;gap:2px}
+  .tile{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+  .t-download{background:#ece8fd;color:#6c5ce7}.t-ai{background:#e3eefc;color:#2f6fd0}
+  .t-tools{background:#fdeedd;color:#c26d1d}.t-stalk{background:#fbe7ef;color:#c23a72}
+  .t-ptero{background:#e2f4e8;color:#1d8a4e}.t-re{background:#e9e6fb;color:#5a48c9}
+  .t-info{background:#e0f4f6;color:#177e89}.t-maker{background:#f3e8f7;color:#9b4dca}
+  .mod p{font-size:13.5px;line-height:1.55;margin:0 0 10px}
+  .mod .foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .count{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted)}
+  .badge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    padding:4px 10px;border-radius:999px}
+  .soon{background:var(--soon-bg);color:var(--soon-tx)}
+  .live{background:var(--live-bg);color:var(--live-tx)}
+  /* form login */
+  .login-wrap{max-width:420px;margin:5vh auto 0}
+  .login-card{padding:26px 24px}
+  .login-card h1{font-size:1.45rem}
+  input.token{width:100%;font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--ink);
+    padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:#fbfaff;outline:none;margin:6px 0 14px}
+  input.token:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,92,231,.15);background:#fff}
+  .err{display:flex;gap:9px;align-items:flex-start;background:#fdecea;color:#b3261e;font-size:14px;font-weight:600;
+    border-radius:12px;padding:11px 14px;margin:12px 0}
+  .err svg{flex:none;margin-top:1px}
+  /* kode & tabel */
   code,pre{font-family:"JetBrains Mono",monospace}
-  pre{background:#f1eefc;border-radius:14px;padding:16px;overflow-x:auto;font-size:13.5px;line-height:1.6;
-    box-shadow:inset 3px 3px 8px rgba(163,177,198,.3)}
-  table{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:14.5px}
-  th{text-align:left;color:var(--muted);font-size:13px;padding:4px 10px}
-  td{background:rgba(255,255,255,.7);padding:12px 10px}
-  td:first-child{border-radius:14px 0 0 14px;font-family:"JetBrains Mono",monospace;font-size:13px}
-  td:last-child{border-radius:0 14px 14px 0}
-  .foot{text-align:center;color:var(--muted);font-size:13px;padding:30px 0 10px}
-  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  code{font-size:.92em;background:rgba(108,92,231,.08);padding:1px 6px;border-radius:6px}
+  pre{background:#241f3d;color:#e9e5ff;border-radius:14px;padding:15px 16px;overflow-x:auto;
+    font-size:13px;line-height:1.65;margin:10px 0}
+  pre code{background:none;padding:0}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th{text-align:left;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;
+    padding:6px 8px;border-bottom:1px solid var(--line)}
+  td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.mono{font-family:"JetBrains Mono",monospace;font-size:13px;white-space:nowrap}
+  .steps{display:grid;gap:14px}
+  @media (min-width:700px){ .steps{grid-template-columns:repeat(3,1fr)} }
+  .step{display:flex;gap:12px;align-items:flex-start}
+  .step .n{width:28px;height:28px;flex:none;border-radius:50%;background:var(--accent);color:#fff;
+    font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .step p{font-size:14px;margin:0}
+  .step b{color:var(--ink)}
+  .foot{color:var(--muted);font-size:13px;text-align:center;padding:26px 0 6px}
+  .center{text-align:center}
 </style>
 </head>
 <body>
-<header class="glass">
+{% from "_icons.html" import icon %}
+<header>
   <div class="bar">
-    <div class="logo">🛰️ RuangNode <span>API</span></div>
+    <a class="brand" href="/"><span class="mark">{{ icon("logo", 20) }}</span>RuangNode&nbsp;<em>API</em></a>
     <nav>{% block nav %}{% endblock %}</nav>
   </div>
 </header>
 <div class="wrap">
   {% block content %}{% endblock %}
-  <div class="foot">RuangNode API · Fase Website · Dibuat dengan FastAPI</div>
+  <div class="foot">RuangNode API · API pribadi, terkunci Access Token</div>
 </div>
 </body>
 </html>
