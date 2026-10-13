@@ -107,6 +107,49 @@ def page_allowed(request: Request) -> bool:
     return valid_session(request.cookies.get(COOKIE_NAME))
 
 
+# ----------------------------------------------------------------------------
+# Anti brute-force: kunci per-IP setelah beberapa kegagalan token.
+# Token situs ini sengaja pendek (pilihan pemilik), jadi gerbangnya yang
+# diperkeras: 5 kegagalan dalam 10 menit -> IP dikunci 15 menit.
+# ----------------------------------------------------------------------------
+FAIL_WINDOW = 600        # detik
+FAIL_MAX = 5             # kegagalan maksimum dalam jendela
+LOCK_SECONDS = 900       # lama kunci
+_fails: dict[str, list[float]] = {}
+_locked_until: dict[str, float] = {}
+
+
+def client_ip(request: Request) -> str:
+    # Di balik Cloudflare Tunnel, IP asli pengunjung ada di CF-Connecting-IP.
+    cf_ip = request.headers.get("CF-Connecting-IP")
+    if cf_ip:
+        return cf_ip.strip()
+    return request.client.host if request.client else "unknown"
+
+
+def is_locked(ip: str) -> bool:
+    until = _locked_until.get(ip)
+    if until and time.time() < until:
+        return True
+    if until:
+        _locked_until.pop(ip, None)
+        _fails.pop(ip, None)
+    return False
+
+
+def record_fail(ip: str) -> None:
+    now = time.time()
+    recent = [t for t in _fails.get(ip, []) if now - t < FAIL_WINDOW]
+    recent.append(now)
+    _fails[ip] = recent
+    if len(recent) >= FAIL_MAX:
+        _locked_until[ip] = now + LOCK_SECONDS
+
+
+def clear_fails(ip: str) -> None:
+    _fails.pop(ip, None)
+
+
 def token_from_request(request: Request) -> str | None:
     token = request.headers.get("X-Access-Token")
     if not token:
@@ -119,14 +162,23 @@ def token_from_request(request: Request) -> str | None:
 
 
 def require_api_token(request: Request) -> None:
+    ip = client_ip(request)
+    if is_locked(ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Terlalu banyak percobaan token yang salah dari IP ini. "
+                   "Coba lagi dalam 15 menit.",
+        )
     token = token_from_request(request)
     if not token or not hmac.compare_digest(token, ACCESS_TOKEN):
+        record_fail(ip)
         raise HTTPException(
             status_code=401,
             detail="Unauthorized: Access Token tidak ada atau salah. "
                    "Sertakan via header X-Access-Token, Authorization: Bearer <token>, "
                    "atau query ?token=.",
         )
+    clear_fails(ip)
 
 
 # ----------------------------------------------------------------------------
@@ -170,8 +222,18 @@ async def login_page(request: Request):
 
 
 async def _do_login(request: Request, token: str):
+    ip = client_ip(request)
+    if is_locked(ip):
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            {"request": request,
+             "error": "Terlalu banyak percobaan gagal dari IP ini. Coba lagi dalam 15 menit."},
+            status_code=429,
+        )
     t = clean_token(token)
     if t and hmac.compare_digest(t, ACCESS_TOKEN):
+        clear_fails(ip)
         resp = RedirectResponse("/", status_code=303)
         resp.set_cookie(
             COOKIE_NAME,
@@ -182,6 +244,7 @@ async def _do_login(request: Request, token: str):
             path="/",
         )
         return resp
+    record_fail(ip)
     return templates.TemplateResponse(
         request,
         "login.html",
