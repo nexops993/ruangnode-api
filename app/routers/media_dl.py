@@ -38,6 +38,13 @@ YTDL_BASE = {
     "retries": 2,
 }
 
+# Bila suatu hari disediakan file cookie YouTube (YTDLP_COOKIES=/path/cookies.txt),
+# endpoint YouTube pulih penuh tanpa perubahan kode — dinding bot YouTube
+# membutuhkan sesi login yang valid.
+_COOKIES = os.environ.get("YTDLP_COOKIES")
+if _COOKIES:
+    YTDL_BASE["cookiefile"] = _COOKIES
+
 YT_NAV_HEADERS = {
     "User-Agent": DEFAULT_HEADERS["User-Agent"],
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -59,17 +66,50 @@ def _extract_sync(url: str, fmt: str | None = None) -> dict:
     opts = dict(YTDL_BASE)
     if fmt:
         opts["format"] = fmt
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        return ydl.extract_info(url, download=False)
+
+
+async def _extract_or_none(url: str, fmt: str | None = None) -> tuple[dict | None, str]:
+    """Kembalikan (info, pesan_error). Tidak melempar — pemanggil yang memutuskan."""
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            return ydl.extract_info(url, download=False)
+        return await asyncio.to_thread(_extract_sync, url, fmt), ""
     except yt_dlp.utils.DownloadError as e:
-        upstream_fail(f"Ekstraksi gagal: {str(e)[:220]}")
+        return None, str(e)[:220]
     except Exception as e:  # noqa: BLE001
-        upstream_fail(f"Ekstraksi gagal: {type(e).__name__}.")
+        return None, f"{type(e).__name__}."
 
 
 async def _extract(url: str, fmt: str | None = None) -> dict:
-    return await asyncio.to_thread(_extract_sync, url, fmt)
+    info, err = await _extract_or_none(url, fmt)
+    if info is None:
+        upstream_fail(f"Ekstraksi gagal: {err}")
+    return info
+
+
+async def _oembed_meta(page_url: str, oembed_api: str) -> dict | None:
+    """Metadata dasar (judul/author/thumbnail) via oEmbed resmi platform."""
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=20.0,
+                                     trust_env=False) as client:
+            resp = await client.get(
+                oembed_api, params={"url": page_url},
+                headers={"User-Agent": DEFAULT_HEADERS["User-Agent"]})
+            if resp.status_code != 200:
+                return None
+            d = resp.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+    return {
+        "title": d.get("title"),
+        "uploader": d.get("author_name"),
+        "duration": None,
+        "duration_string": None,
+        "thumbnail": d.get("thumbnail_url"),
+        "webpage_url": page_url,
+        "view_count": None,
+        "upload_date": None,
+    }
 
 
 def _meta(info: dict) -> dict:
@@ -163,37 +203,68 @@ def _generic_meta(url: str, max_height: int | None = None) -> dict:
 # ============================================================================
 # ytmp4 / ytmp3
 # ============================================================================
+YOUTUBE_LIMIT_NOTE = (
+    "TERBATAS: YouTube menolak ekstraksi dari IP server ini "
+    "(\"Sign in to confirm you're not a bot\"). Metadata diambil dari oEmbed "
+    "resmi; tautan unduh butuh cookie sesi YouTube (env YTDLP_COOKIES)."
+)
+
+
 @router.get("/ytmp4")
 async def download_ytmp4(url: str = Query(default=""), quality: int = Query(default=720)):
     url = require_url(url)
-    info = await _extract(url)
-    dl = _best_download(info, quality)
-    if not dl:
-        upstream_fail("Tidak ada format video yang bisa diambil untuk URL ini.")
-    result = _meta(info)
-    result["download"] = dl
-    return ok(result)
+    info, err = await _extract_or_none(url)
+    if info:
+        dl = _best_download(info, quality)
+        if not dl:
+            upstream_fail("Tidak ada format video yang bisa diambil untuk URL ini.")
+        result = _meta(info)
+        result["download"] = dl
+        return ok(result)
+    meta = await _oembed_meta(url, "https://www.youtube.com/oembed")
+    if not meta:
+        upstream_fail(f"Ekstraksi gagal: {err}")
+    meta.update({
+        "limited": True,
+        "download": None,
+        "note": YOUTUBE_LIMIT_NOTE,
+    })
+    return ok(meta)
 
 
 @router.get("/ytmp3")
 async def download_ytmp3(url: str = Query(default="")):
     url = require_url(url)
-    info = await _extract(url)
-    audio = _pick_bestaudio(info)
-    if not audio:
-        upstream_fail("Tidak ada format audio yang bisa diambil untuk URL ini.")
-    result = _meta(info)
-    result["audio"] = audio
-    result["file_url"] = f"/api/download/ytmp3/file?url={url}"
-    result["note"] = ("audio_url adalah stream audio langsung (bisa m4a/webm/opus). "
-                      "Gunakan file_url untuk MP3 hasil konversi server.")
-    return ok(result)
+    info, err = await _extract_or_none(url)
+    if info:
+        audio = _pick_bestaudio(info)
+        if not audio:
+            upstream_fail("Tidak ada format audio yang bisa diambil untuk URL ini.")
+        result = _meta(info)
+        result["audio"] = audio
+        result["file_url"] = f"/api/download/ytmp3/file?url={url}"
+        result["note"] = ("audio_url adalah stream audio langsung (bisa m4a/webm/opus). "
+                          "Gunakan file_url untuk MP3 hasil konversi server.")
+        return ok(result)
+    meta = await _oembed_meta(url, "https://www.youtube.com/oembed")
+    if not meta:
+        upstream_fail(f"Ekstraksi gagal: {err}")
+    meta.update({
+        "limited": True,
+        "audio": None,
+        "file_url": None,
+        "note": YOUTUBE_LIMIT_NOTE,
+    })
+    return ok(meta)
 
 
 @router.get("/ytmp3/file")
 async def download_ytmp3_file(url: str = Query(default="")):
     url = require_url(url)
-    info = await _extract(url)
+    info, err = await _extract_or_none(url)
+    if info is None:
+        upstream_fail(f"Konversi MP3 tidak bisa: ekstraksi YouTube diblokir dari IP "
+                      f"server ini ({err[:120]}). Butuh cookie sesi YouTube.")
     dur = info.get("duration") or 0
     if dur > MAX_MP3_SECONDS:
         bad_request(f"Video terlalu panjang ({info.get('duration_string')}). "
@@ -318,7 +389,10 @@ def _platform_ok(url: str, info: dict) -> dict:
 @router.get("/bilibili")
 async def download_bilibili(url: str = Query(default="")):
     url = require_url(url)
-    info = await _extract(url)
+    info, err = await _extract_or_none(url)
+    if info is None:
+        upstream_fail("Bilibili menolak request dari IP server ini (HTTP 412 — WAF "
+                      f"Bilibili memblokir IP datacenter). Detail: {err[:140]}")
     return ok(_platform_ok(url, info))
 
 
@@ -332,8 +406,22 @@ async def download_dailymotion(url: str = Query(default="")):
 @router.get("/vimeo")
 async def download_vimeo(url: str = Query(default="")):
     url = require_url(url)
-    info = await _extract(url)
-    return ok(_platform_ok(url, info))
+    info, err = await _extract_or_none(url)
+    if info:
+        return ok(_platform_ok(url, info))
+    # Vimeo memblokir IP server ini (web client butuh login, config 403) —
+    # fallback metadata resmi via oEmbed.
+    meta = await _oembed_meta(url, "https://vimeo.com/api/oembed.json")
+    if not meta:
+        upstream_fail(f"Ekstraksi gagal: {err}")
+    meta.update({
+        "limited": True,
+        "download": None,
+        "note": ("TERBATAS: Vimeo menolak ekstraksi file dari IP server ini "
+                 "(web client butuh login). Metadata dari oEmbed resmi; "
+                 "tautan unduh tidak tersedia."),
+    })
+    return ok(meta)
 
 
 @router.get("/soundcloud")
