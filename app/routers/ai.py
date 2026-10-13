@@ -408,7 +408,7 @@ async def ai_aifilter(url: str = Query(default=""), filter: str = Query(default=
     out = await asyncio.to_thread(_apply_local_filter, raw, name)
     return Response(
         content=out, media_type="image/jpeg",
-        headers={"X-RuangNode-Note": f"Filter lokal (Pillow) di server RuangNode: {FILTERS[name]} — bukan model AI generatif."},
+        headers={"X-RuangNode-Note": f"Filter lokal (Pillow) di server RuangNode: {FILTERS[name]} - bukan model AI generatif."},
     )
 
 
@@ -503,7 +503,7 @@ async def ai_text2vid(prompt: str = Query(default=""), ratio: str = Query(defaul
     return Response(
         content=data, media_type="video/mp4",
         headers={"X-RuangNode-Limited": "true",
-                 "X-RuangNode-Note": ("TERBATAS: bukan model text-to-video — ini animasi zoom 3 detik "
+                 "X-RuangNode-Note": ("TERBATAS: bukan model text-to-video - ini animasi zoom 3 detik "
                                       "dari gambar hasil generate (ffmpeg lokal), karena tidak ada "
                                       "model video yang hidup di backend RuangNode.")},
     )
