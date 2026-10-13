@@ -130,21 +130,38 @@ def _parse_tiktok_item(item: dict, source_url: str) -> dict:
     return result
 
 
-async def _get_tiktok_item(url: str) -> tuple[dict, dict]:
-    html, final_url = await fetch_text(url, headers=TIKTOK_REFERER)
+async def _get_tiktok_item(url: str) -> tuple[dict, dict, str]:
+    """Ambil item TikTok; kembalikan (item, parsed, cookie_header).
+
+    Cookie dari sesi pengambilan halaman WAJIB diteruskan ke CDN TikTok —
+    tanpa cookie sesi yang sama, playAddr membalas 403 (terverifikasi).
+    """
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30.0,
+                                     trust_env=False) as client:
+            resp = await client.get(url, headers={**DEFAULT_HEADERS, **TIKTOK_REFERER})
+            resp.raise_for_status()
+            html = resp.text
+            final_url = str(resp.url)
+            cookie_header = "; ".join(
+                f"{c.name}={c.value}" for c in client.cookies.jar)
+    except httpx.HTTPStatusError as e:
+        upstream_fail(f"TikTok menolak request (HTTP {e.response.status_code}).")
+    except httpx.HTTPError as e:
+        upstream_fail(f"Gagal menghubungi TikTok: {type(e).__name__}.")
     item = _extract_rehydration(html)
     if not item:
         upstream_fail(
             "Data postingan TikTok tidak ditemukan di halaman (struktur halaman "
             "berubah atau postingan tidak publik)."
         )
-    return item, _parse_tiktok_item(item, final_url)
+    return item, _parse_tiktok_item(item, final_url), cookie_header
 
 
 @router.get("/tiktok")
 async def download_tiktok(url: str = Query(default="")):
     url = require_url(url)
-    _, parsed = await _get_tiktok_item(url)
+    _, parsed, _ = await _get_tiktok_item(url)
     return ok(parsed)
 
 
@@ -154,6 +171,7 @@ async def _stream_remote(remote_url: str, filename: str, media_type: str,
     h.update(TIKTOK_REFERER)
     if headers:
         h.update(headers)
+    # (cookie sesi TikTok diteruskan pemanggil lewat headers bila ada)
     client = httpx.AsyncClient(follow_redirects=True, timeout=120.0, trust_env=False)
     try:
         req = client.build_request("GET", remote_url, headers=h)
@@ -186,21 +204,22 @@ async def download_tiktok_file(
     indexes: str = Query(default=""),
 ):
     url = require_url(url)
-    item, parsed = await _get_tiktok_item(url)
+    item, parsed, cookie_header = await _get_tiktok_item(url)
     item_id = parsed.get("id") or "tiktok"
     t = type.lower().strip()
+    sess = {"Cookie": cookie_header} if cookie_header else {}
 
     if t == "video":
         remote = parsed["video"].get("nowm")
         if not remote:
             bad_request("Postingan ini tidak memiliki video (kemungkinan foto carousel).")
-        return await _stream_remote(remote, f"tiktok_{item_id}.mp4", "video/mp4")
+        return await _stream_remote(remote, f"tiktok_{item_id}.mp4", "video/mp4", headers=sess)
 
     if t == "mp3":
         remote = parsed["audio"].get("mp3")
         if not remote:
             bad_request("Postingan ini tidak memiliki audio yang bisa diunduh.")
-        return await _stream_remote(remote, f"tiktok_{item_id}.mp3", "audio/mpeg")
+        return await _stream_remote(remote, f"tiktok_{item_id}.mp3", "audio/mpeg", headers=sess)
 
     if t in ("photo", "gif"):
         slides = parsed.get("slides") or []
@@ -223,7 +242,7 @@ async def download_tiktok_file(
                     img_url = slides[n - 1]["image"]
                     if not img_url:
                         continue
-                    data = await fetch_bytes(img_url, headers=TIKTOK_REFERER)
+                    data = await fetch_bytes(img_url, headers={**TIKTOK_REFERER, **sess})
                     ext = "jpg"
                     zf.writestr(f"tiktok_{item_id}_slide{n}.{ext}", data)
             return Response(
@@ -240,13 +259,13 @@ async def download_tiktok_file(
             if not slide["image"]:
                 bad_request("Slide ini tidak memiliki URL gambar.")
             return await _stream_remote(
-                slide["image"], f"tiktok_{item_id}_slide{index}.jpg", "image/jpeg")
+                slide["image"], f"tiktok_{item_id}_slide{index}.jpg", "image/jpeg", headers=sess)
 
         # t == "gif": konversi klip live photo slide menjadi GIF via ffmpeg
         clip = slide.get("live_clip")
         if not clip:
             bad_request("Slide ini tidak bergerak (tidak ada klip Live Photo), jadi tidak bisa dijadikan GIF.")
-        clip_bytes = await fetch_bytes(clip, headers=TIKTOK_REFERER)
+        clip_bytes = await fetch_bytes(clip, headers={**TIKTOK_REFERER, **sess})
         return await _clip_to_gif(clip_bytes, f"tiktok_{item_id}_slide{index}.gif")
 
     bad_request("Parameter type tidak dikenal. Pilihan: video, mp3, photo, gif.")
