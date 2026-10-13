@@ -8,3 +8,7 @@ mega-py==1.0.8
 tenacity>=9.0.0
 edge-tts>=7.0.0
 Pillow>=10.0.0
+qrcode>=7.0
+pypdf>=4.0
+youtube-transcript-api>=1.0
+shazamio>=0.8

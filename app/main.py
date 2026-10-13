@@ -23,6 +23,7 @@ from .routers import media_dl as media_dl_router
 from .routers import social_dl as social_dl_router
 from .routers import host_dl as host_dl_router
 from .routers import ai as ai_router
+from .routers import tools as tools_router
 from .security import (
     COOKIE_NAME,
     SESSION_DAYS,
@@ -56,6 +57,7 @@ app.include_router(media_dl_router.router)
 app.include_router(social_dl_router.router)
 app.include_router(host_dl_router.router)
 app.include_router(ai_router.router)
+app.include_router(tools_router.router)
 
 # ----------------------------------------------------------------------------
 # Data katalog (modul dibangun per kategori sampai tuntas)
@@ -65,7 +67,7 @@ CATEGORIES = [
      "desc": "Unduh video, audio, dan foto dari berbagai platform — diawali TikTok: tanpa watermark, MP3, carousel selektif, GIF."},
     {"name": "AI", "icon": "ai", "planned": 21, "status": "aktif",
      "desc": "Chat AI, generator dan editor gambar, text-to-speech, text-to-video."},
-    {"name": "Tools", "icon": "tools", "planned": 43, "status": "segera",
+    {"name": "Tools", "icon": "tools", "planned": 43, "status": "aktif",
      "desc": "OCR, konverter, QR, shortener, screenshot web, temp mail, olah PDF."},
     {"name": "Stalk", "icon": "stalk", "planned": 26, "status": "segera",
      "desc": "Lihat profil publik dari puluhan platform sosial dan game."},
@@ -134,6 +136,49 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/ai/bypassai", "desc": "Parafrase teks agar terdengar natural (dibantu model)"},
     {"method": "GET", "path": "/api/ai/detectai", "desc": "Estimasi teks AI dari heuristik lokal (bukan Grammarly)"},
     {"method": "GET", "path": "/api/ai/zeta", "desc": "Audio menjadi suara 'waifu' (pitch-shift lokal ffmpeg)"},
+    {"method": "GET", "path": "/api/tools/text2base64", "desc": "Teks menjadi Base64"},
+    {"method": "GET", "path": "/api/tools/base64totext", "desc": "Base64 menjadi teks"},
+    {"method": "GET", "path": "/api/tools/text2binner", "desc": "Teks menjadi biner"},
+    {"method": "GET", "path": "/api/tools/binner2text", "desc": "Biner menjadi teks"},
+    {"method": "GET", "path": "/api/tools/text2qr", "desc": "Teks menjadi QR code (PNG)"},
+    {"method": "GET", "path": "/api/tools/nik", "desc": "Parser NIK Indonesia: wilayah, tanggal lahir, jenis kelamin"},
+    {"method": "GET", "path": "/api/tools/imageconvert", "desc": "Konversi/resize gambar (format, dimensi, kualitas)"},
+    {"method": "GET", "path": "/api/tools/hd", "desc": "Tingkatkan gambar v1 (upscale lokal, terbatas)"},
+    {"method": "GET", "path": "/api/tools/hd2", "desc": "Tingkatkan gambar v2 (upscale lokal, terbatas)"},
+    {"method": "GET", "path": "/api/tools/hd3", "desc": "Tingkatkan gambar v3 (upscale lokal, terbatas)"},
+    {"method": "GET", "path": "/api/tools/hd4", "desc": "Tingkatkan gambar v4 (upscale lokal, terbatas)"},
+    {"method": "GET", "path": "/api/tools/remini", "desc": "Enhance gambar lokal (bukan aplikasi Remini asli)"},
+    {"method": "GET", "path": "/api/tools/pdf-info", "desc": "Info PDF: halaman, metadata, ukuran"},
+    {"method": "GET", "path": "/api/tools/pdf-merge", "desc": "Gabung beberapa PDF menjadi satu"},
+    {"method": "GET", "path": "/api/tools/pdf-split", "desc": "Pisahkan halaman PDF (pages=1-3,5)"},
+    {"method": "GET", "path": "/api/tools/pdf-compress", "desc": "Kompresi ringan PDF (terbatas)"},
+    {"method": "GET", "path": "/api/tools/saveweb", "desc": "Arsip halaman web menjadi ZIP"},
+    {"method": "GET", "path": "/api/tools/ocr", "desc": "OCR gambar ke teks (tesseract, ind/eng)"},
+    {"method": "GET", "path": "/api/tools/ceknsfw", "desc": "Penilaian keamanan gambar (estimasi model vision)"},
+    {"method": "GET", "path": "/api/tools/translate", "desc": "Terjemahan teks (source/target bahasa)"},
+    {"method": "GET", "path": "/api/tools/ytsum", "desc": "Ringkasan video YouTube dari transkrip"},
+    {"method": "GET", "path": "/api/tools/findsong", "desc": "Kenali lagu dari URL audio (Shazam)"},
+    {"method": "GET", "path": "/api/tools/removevocal", "desc": "Kurangi vokal audio (efek karaoke ffmpeg, terbatas)"},
+    {"method": "GET", "path": "/api/tools/tinyurl", "desc": "Shortener TinyURL (API resmi)"},
+    {"method": "GET", "path": "/api/tools/cleanuri", "desc": "Shortener CleanURI (API resmi)"},
+    {"method": "GET", "path": "/api/tools/dagd", "desc": "Shortener da.gd (API resmi)"},
+    {"method": "GET", "path": "/api/tools/spoome", "desc": "Shortener spoo.me (terbatas: butuh akun)"},
+    {"method": "GET", "path": "/api/tools/pagespeed", "desc": "Skor PageSpeed Google (terbatas: kuota tanpa key)"},
+    {"method": "GET", "path": "/api/tools/proxy", "desc": "Daftar proxy publik (feed GeoNode)"},
+    {"method": "GET", "path": "/api/tools/genmail", "desc": "Temp mail: domains/create/inbox/read (mail.tm)"},
+    {"method": "GET", "path": "/api/tools/tempmail2", "desc": "Temp mail v2: create/inbox/read (mail.tm)"},
+    {"method": "GET", "path": "/api/tools/tempmail3", "desc": "Temp mail v3: create/inbox (mail.tm)"},
+    {"method": "GET", "path": "/api/tools/patreon-search", "desc": "Cari kreator Patreon (API publik)"},
+    {"method": "GET", "path": "/api/tools/patreon-creator", "desc": "Detail kreator Patreon"},
+    {"method": "GET", "path": "/api/tools/patreon-post", "desc": "Detail post Patreon"},
+    {"method": "GET", "path": "/api/tools/patreon-posts", "desc": "Daftar post kreator Patreon"},
+    {"method": "GET", "path": "/api/tools/ssweb", "desc": "Screenshot halaman web (Chromium lokal, PNG)"},
+    {"method": "GET", "path": "/api/tools/ngl", "desc": "Kirim pesan NGL (alur publik resmi)"},
+    {"method": "GET", "path": "/api/tools/cekresi", "desc": "Cek resi (gagal: tidak ada API publik tanpa key)"},
+    {"method": "GET", "path": "/api/tools/xlcheck", "desc": "Cek kuota XL/Axis (gagal: butuh OTP pemilik nomor)"},
+    {"method": "GET", "path": "/api/tools/xlcircle", "desc": "Cek XL Circle (gagal: butuh OTP pemilik nomor)"},
+    {"method": "GET", "path": "/api/tools/spamotp", "desc": "DITOLAK: spam OTP adalah pelecehan (403)"},
+    {"method": "GET", "path": "/api/tools/alightmotion", "desc": "DITOLAK: aktivasi premium ilegal (403)"},
 ]
 
 # ----------------------------------------------------------------------------
