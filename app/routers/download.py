@@ -149,26 +149,82 @@ async def _get_tiktok_item(url: str) -> tuple[dict, dict, str]:
     Cookie dari sesi pengambilan halaman WAJIB diteruskan ke CDN TikTok —
     tanpa cookie sesi yang sama, playAddr membalas 403 (terverifikasi).
     """
-    try:
+    async def _fetch(warm: bool):
         async with httpx.AsyncClient(follow_redirects=True, timeout=30.0,
                                      trust_env=False) as client:
-            resp = await client.get(url, headers={**DEFAULT_HEADERS, **TIKTOK_REFERER})
+            if warm:
+                # Sesi hangat: kunjungi beranda dulu agar cookie sesi terbentuk.
+                try:
+                    await client.get("https://www.tiktok.com/", headers=TIKTOK_NAV_HEADERS)
+                except httpx.HTTPError:
+                    pass
+            resp = await client.get(url, headers=TIKTOK_NAV_HEADERS)
             resp.raise_for_status()
-            html = resp.text
-            final_url = str(resp.url)
-            cookie_header = "; ".join(
-                f"{c.name}={c.value}" for c in client.cookies.jar)
+            cookies = "; ".join(f"{c.name}={c.value}" for c in client.cookies.jar)
+            return resp.text, str(resp.url), cookies
+
+    try:
+        html, final_url, cookie_header = await _fetch(warm=False)
+        item = _extract_rehydration(html)
+        if not item:
+            # Coba sekali lagi dengan sesi hangat sebelum menyerah.
+            html, final_url, cookie_header = await _fetch(warm=True)
+            item = _extract_rehydration(html)
     except httpx.HTTPStatusError as e:
         upstream_fail(f"TikTok menolak request (HTTP {e.response.status_code}).")
     except httpx.HTTPError as e:
         upstream_fail(f"Gagal menghubungi TikTok: {type(e).__name__}.")
-    item = _extract_rehydration(html)
     if not item:
+        # Fallback first-party: oEmbed resmi TikTok. TikTok TIDAK mengekspos
+        # data slide foto carousel ke halaman web publik (terverifikasi:
+        # tanpa itemStruct/og:image di semua varian UA) — untuk postingan
+        # foto, oEmbed hanya memberi judul, author, dan cover.
+        parsed = await _oembed_fallback(url)
+        if parsed:
+            return {}, parsed, cookie_header
         upstream_fail(
             "Data postingan TikTok tidak ditemukan di halaman (struktur halaman "
             "berubah atau postingan tidak publik)."
         )
     return item, _parse_tiktok_item(item, final_url), cookie_header
+
+
+async def _oembed_fallback(url: str) -> dict | None:
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=20.0,
+                                     trust_env=False) as client:
+            resp = await client.get(
+                "https://www.tiktok.com/oembed",
+                params={"url": url},
+                headers={"User-Agent": DEFAULT_HEADERS["User-Agent"]},
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+    author_url = data.get("author_url") or ""
+    username = author_url.rstrip("/").split("@")[-1] if "@" in author_url else None
+    is_photo = "/photo/" in url
+    thumb = data.get("thumbnail_url")
+    return {
+        "id": None,
+        "type": "photo" if is_photo else "video",
+        "desc": data.get("title"),
+        "create_time": None,
+        "author": {"username": username, "nickname": data.get("author_name")},
+        "stats": {"play": None, "like": None, "comment": None, "share": None},
+        "video": {"nowm": None, "wm": None, "cover": thumb, "duration": None,
+                  "width": data.get("thumbnail_width"), "height": data.get("thumbnail_height")},
+        "audio": {"mp3": None, "title": None, "author": None, "duration": None},
+        "slides": ([{"image": thumb, "image_all": [thumb], "width": data.get("thumbnail_width"),
+                     "height": data.get("thumbnail_height"), "live_clip": None}] if thumb else []),
+        "source": url,
+        "limited": True,
+        "note": ("Data terbatas dari oEmbed resmi TikTok: TikTok tidak mengekspos "
+                 "detail slide foto carousel ke web publik, jadi yang tersedia hanya "
+                 "judul, author, dan gambar cover."),
+    }
 
 
 @router.get("/tiktok")
