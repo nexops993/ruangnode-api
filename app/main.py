@@ -22,6 +22,7 @@ from .routers import download as download_router
 from .routers import media_dl as media_dl_router
 from .routers import social_dl as social_dl_router
 from .routers import host_dl as host_dl_router
+from .routers import ai as ai_router
 from .security import (
     COOKIE_NAME,
     SESSION_DAYS,
@@ -54,6 +55,7 @@ app.include_router(download_router.router)
 app.include_router(media_dl_router.router)
 app.include_router(social_dl_router.router)
 app.include_router(host_dl_router.router)
+app.include_router(ai_router.router)
 
 # ----------------------------------------------------------------------------
 # Data katalog (modul dibangun per kategori sampai tuntas)
@@ -61,7 +63,7 @@ app.include_router(host_dl_router.router)
 CATEGORIES = [
     {"name": "Download", "icon": "download", "planned": 29, "status": "aktif",
      "desc": "Unduh video, audio, dan foto dari berbagai platform — diawali TikTok: tanpa watermark, MP3, carousel selektif, GIF."},
-    {"name": "AI", "icon": "ai", "planned": 21, "status": "segera",
+    {"name": "AI", "icon": "ai", "planned": 21, "status": "aktif",
      "desc": "Chat AI, generator dan editor gambar, text-to-speech, text-to-video."},
     {"name": "Tools", "icon": "tools", "planned": 43, "status": "segera",
      "desc": "OCR, konverter, QR, shortener, screenshot web, temp mail, olah PDF."},
@@ -111,6 +113,27 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/download/mcpe", "desc": "Metadata add-on MCPEDL (terbatas: file via API internal)"},
     {"method": "GET", "path": "/api/download/github", "desc": "Info repo + arsip zip/tar GitHub (API resmi)"},
     {"method": "GET", "path": "/api/download/applemusic", "desc": "Metadata + preview 30 detik Apple Music (iTunes Lookup)"},
+    {"method": "GET", "path": "/api/ai/chatgpt", "desc": "Chat AI model GPT (sesi chat_id, via gateway 9Router)"},
+    {"method": "GET", "path": "/api/ai/mistral", "desc": "Chat AI model Mistral (via Cloudflare Workers AI)"},
+    {"method": "GET", "path": "/api/ai/qwen3", "desc": "Chat AI model Qwen3 (via gateway 9Router)"},
+    {"method": "GET", "path": "/api/ai/perplexity", "desc": "Jawab gaya mesin riset (note: bukan pencarian web langsung)"},
+    {"method": "GET", "path": "/api/ai/kuroneko", "desc": "RuangNode Assistant — persona ramah Bahasa Indonesia (sesi)"},
+    {"method": "GET", "path": "/api/ai/feeb", "desc": "Feel Better Bot — persona suportif/empatik (sesi)"},
+    {"method": "GET", "path": "/api/ai/notrack", "desc": "Chat tanpa jejak, persona bisa dipilih"},
+    {"method": "GET", "path": "/api/ai/nova", "desc": "Chat AI umum yang cepat (Gemma)"},
+    {"method": "GET", "path": "/api/ai/aiseek", "desc": "Chat multi-model (model=...) atau gambar (action=image)"},
+    {"method": "GET", "path": "/api/ai/flux", "desc": "Text-to-image Flux (Cloudflare) — balas gambar langsung"},
+    {"method": "GET", "path": "/api/ai/aiart", "desc": "Generator gambar artistik (Flux)"},
+    {"method": "GET", "path": "/api/ai/toonmix", "desc": "Gambar gaya kartun (T2I; I2I terbatas — tanpa model img2img)"},
+    {"method": "GET", "path": "/api/ai/nanobanana", "desc": "Edit gambar via prompt (TERBATAS: belum ada model image-edit)"},
+    {"method": "GET", "path": "/api/ai/animetoreal", "desc": "Anime ke realistis (TERBATAS: belum ada model img2img)"},
+    {"method": "GET", "path": "/api/ai/aifilter", "desc": "Filter gambar lokal (Pillow): grayscale/blur/edge/dll"},
+    {"method": "GET", "path": "/api/ai/img2prompt", "desc": "Gambar menjadi prompt generator (model vision)"},
+    {"method": "GET", "path": "/api/ai/tts", "desc": "Text-to-speech Bahasa Indonesia (edge-tts) — balas audio MP3"},
+    {"method": "GET", "path": "/api/ai/text2vid", "desc": "Text-to-video (TERBATAS: animasi zoom dari gambar, bukan model video)"},
+    {"method": "GET", "path": "/api/ai/bypassai", "desc": "Parafrase teks agar terdengar natural (dibantu model)"},
+    {"method": "GET", "path": "/api/ai/detectai", "desc": "Estimasi teks AI dari heuristik lokal (bukan Grammarly)"},
+    {"method": "GET", "path": "/api/ai/zeta", "desc": "Audio menjadi suara 'waifu' (pitch-shift lokal ffmpeg)"},
 ]
 
 # ----------------------------------------------------------------------------
