@@ -20,6 +20,7 @@ from fastapi.templating import Jinja2Templates
 from . import security
 from .routers import download as download_router
 from .routers import media_dl as media_dl_router
+from .routers import social_dl as social_dl_router
 from .security import (
     COOKIE_NAME,
     SESSION_DAYS,
@@ -50,6 +51,7 @@ app = FastAPI(
 )
 app.include_router(download_router.router)
 app.include_router(media_dl_router.router)
+app.include_router(social_dl_router.router)
 
 # ----------------------------------------------------------------------------
 # Data katalog (modul dibangun per kategori sampai tuntas)
@@ -86,6 +88,16 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/download/dailymotion", "desc": "Info + tautan video Dailymotion"},
     {"method": "GET", "path": "/api/download/vimeo", "desc": "Info video Vimeo (terbatas: metadata via oEmbed, file butuh login)"},
     {"method": "GET", "path": "/api/download/soundcloud", "desc": "Info + tautan stream audio SoundCloud"},
+    {"method": "GET", "path": "/api/download/douyin", "desc": "Info + tautan video Douyin (terbatas: butuh cookie sesi Douyin)"},
+    {"method": "GET", "path": "/api/download/instagram", "desc": "Info + tautan video/foto Instagram publik"},
+    {"method": "GET", "path": "/api/download/facebook", "desc": "Info + tautan video Facebook publik"},
+    {"method": "GET", "path": "/api/download/x", "desc": "Info + tautan video X/Twitter (jalur yt-dlp)"},
+    {"method": "GET", "path": "/api/download/x2", "desc": "Info + tautan video X/Twitter (jalur scraping halaman resmi)"},
+    {"method": "GET", "path": "/api/download/snackvideo", "desc": "Info + tautan video SnackVideo"},
+    {"method": "GET", "path": "/api/download/capcut", "desc": "Info + video preview template CapCut"},
+    {"method": "GET", "path": "/api/download/pinterest", "desc": "Info + media pin Pinterest (video/gambar penuh)"},
+    {"method": "GET", "path": "/api/download/videy", "desc": "Tautan MP4 langsung Videy (terverifikasi)"},
+    {"method": "GET", "path": "/api/download/xnxx", "desc": "Info + tautan video XNXX"},
 ]
 
 # ----------------------------------------------------------------------------
