@@ -460,7 +460,8 @@ async def ai_tts(text: str = Query(default=""), model: str = Query(default="fema
                 pass
 
     data = await asyncio.to_thread(_speak)
-    if not data or not data.startswith(b"\xff\xfb") and not data.startswith(b"ID3"):
+    mp3_magic = (b"ID3", b"\xff\xfb", b"\xff\xfa", b"\xff\xf3", b"\xff\xf2")
+    if not data or not data.startswith(mp3_magic):
         upstream_fail("Hasil TTS bukan berkas MP3 valid.")
     return Response(content=data, media_type="audio/mpeg")
 
@@ -525,9 +526,10 @@ async def ai_zeta(url: str = Query(default="")):
         ])
         with open(out, "rb") as f:
             data = f.read()
-    if not data or not (data.startswith(b"\xff\xfb") or data.startswith(b"ID3") or data.startswith(b"\xff\xf3")):
+    mp3_magic = (b"ID3", b"\xff\xfb", b"\xff\xfa", b"\xff\xf3", b"\xff\xf2")
+    if not data or not data.startswith(mp3_magic):
         upstream_fail("Gagal menghasilkan audio MP3.")
     return Response(
         content=data, media_type="audio/mpeg",
-        headers={"X-RuangNode-Note": "Efek pitch-shift lokal (ffmpeg) di server RuangNode — bukan model voice conversion."},
+        headers={"X-RuangNode-Note": "Efek pitch-shift lokal (ffmpeg) di server RuangNode - bukan model voice conversion."},
     )
