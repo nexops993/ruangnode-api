@@ -9,6 +9,7 @@ Bukan agregator pihak ketiga: ini akun/gateway pemilik sendiri.
 """
 
 import base64
+import json
 import os
 from collections import OrderedDict
 
@@ -63,7 +64,11 @@ async def nine_chat(messages: list[dict], model: str, max_tokens: int = 1024,
     if resp.status_code != 200:
         upstream_fail(f"Gateway 9Router membalas HTTP {resp.status_code}.")
     try:
-        data = resp.json()
+        text = resp.text.strip()
+        # 9Router menempelkan suffix SSE "data: [DONE]" setelah objek JSON.
+        if "\ndata:" in text:
+            text = text.split("\ndata:")[0]
+        data = json.loads(text)
         # 9Router membungkus respons OpenAI dalam kunci "data".
         payload = data.get("data", data)
         return payload["choices"][0]["message"]["content"].strip()
