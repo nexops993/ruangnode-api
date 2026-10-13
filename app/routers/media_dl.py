@@ -211,16 +211,20 @@ def _pick_bestaudio(info: dict) -> dict | None:
         return {"kind": "single", "url": a["url"], "ext": a.get("ext"),
                 "abr": a.get("abr"),
                 "filesize_approx": a.get("filesize") or a.get("filesize_approx")}
+    manifest = None
     for f in auds:
         proto = f.get("protocol") or ""
-        if "m3u8" in proto or "dash" in proto:
-            return {
-                "kind": "stream-manifest",
-                "url": f["url"], "ext": f.get("ext"), "abr": f.get("abr"),
-                "protocol": proto,
-                "note": ("Manifest streaming HLS/DASH — putar dengan player yang "
-                         "mendukungnya (mis. VLC), bukan file audio langsung."),
-            }
+        if ("m3u8" in proto or "dash" in proto) and (
+                manifest is None or (f.get("abr") or 0) > (manifest.get("abr") or 0)):
+            manifest = f
+    if manifest:
+        return {
+            "kind": "stream-manifest",
+            "url": manifest["url"], "ext": manifest.get("ext"), "abr": manifest.get("abr"),
+            "protocol": manifest.get("protocol"),
+            "note": ("Manifest streaming HLS/DASH — putar dengan player yang "
+                     "mendukungnya (mis. VLC), bukan file audio langsung."),
+        }
     # fallback: format utama bila tidak ada format audio-only
     url = info.get("url")
     if url:
