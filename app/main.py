@@ -21,6 +21,7 @@ from . import security
 from .routers import download as download_router
 from .routers import media_dl as media_dl_router
 from .routers import social_dl as social_dl_router
+from .routers import host_dl as host_dl_router
 from .security import (
     COOKIE_NAME,
     SESSION_DAYS,
@@ -52,6 +53,7 @@ app = FastAPI(
 app.include_router(download_router.router)
 app.include_router(media_dl_router.router)
 app.include_router(social_dl_router.router)
+app.include_router(host_dl_router.router)
 
 # ----------------------------------------------------------------------------
 # Data katalog (modul dibangun per kategori sampai tuntas)
@@ -98,6 +100,17 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/download/pinterest", "desc": "Info + media pin Pinterest (video/gambar penuh)"},
     {"method": "GET", "path": "/api/download/videy", "desc": "Tautan MP4 langsung Videy (terverifikasi)"},
     {"method": "GET", "path": "/api/download/xnxx", "desc": "Info + tautan video XNXX"},
+    {"method": "GET", "path": "/api/download/mediafire", "desc": "Tautan unduh langsung MediaFire (terverifikasi)"},
+    {"method": "GET", "path": "/api/download/gofile", "desc": "Daftar file + tautan langsung GoFile (API resmi + token akun tamu)"},
+    {"method": "GET", "path": "/api/download/pixeldrain", "desc": "Info file + tautan unduh Pixeldrain (API resmi)"},
+    {"method": "GET", "path": "/api/download/krakenfiles", "desc": "Metadata KrakenFiles (terbatas: unduhan diproteksi captcha)"},
+    {"method": "GET", "path": "/api/download/uploadhaven", "desc": "Metadata UploadHaven (terbatas: unduhan butuh timer browser)"},
+    {"method": "GET", "path": "/api/download/terabox", "desc": "Daftar file share TeraBox (terbatas: butuh cookie TERABOX_COOKIES)"},
+    {"method": "GET", "path": "/api/download/mega", "desc": "Metadata tautan publik Mega via library mega.py (terbatas: file E2E)"},
+    {"method": "GET", "path": "/api/download/scribd", "desc": "Scribd (gagal: dinding Client Challenge JS)"},
+    {"method": "GET", "path": "/api/download/mcpe", "desc": "Metadata add-on MCPEDL (terbatas: file via API internal)"},
+    {"method": "GET", "path": "/api/download/github", "desc": "Info repo + arsip zip/tar GitHub (API resmi)"},
+    {"method": "GET", "path": "/api/download/applemusic", "desc": "Metadata + preview 30 detik Apple Music (iTunes Lookup)"},
 ]
 
 # ----------------------------------------------------------------------------
