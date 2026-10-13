@@ -33,6 +33,19 @@ router = APIRouter(prefix="/api/download", dependencies=[Depends(require_api_tok
 
 TIKTOK_REFERER = {"Referer": "https://www.tiktok.com/"}
 
+# Header navigasi browser PENUH. Tanpa ini (Accept + Sec-Fetch-*), TikTok
+# menyajikan shell halaman tanpa data tertanam — terverifikasi di VPS.
+TIKTOK_NAV_HEADERS = {
+    "User-Agent": DEFAULT_HEADERS["User-Agent"],
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,id;q=0.8",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+}
+
 # ============================================================================
 # TikTok — scraping dari awal (parse data tertanam halaman item)
 # ============================================================================
