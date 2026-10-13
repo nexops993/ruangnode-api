@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Dokumentasi · RuangNode API{% endblock %}
+{% block nav %}
+<a class="navlink" href="/">Dashboard</a>
+<a class="navlink" href="/docs">Dokumentasi</a>
+<a class="navlink" href="/logout">Keluar</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>📖 Dokumentasi</h1>
+  <p>Base URL: <code>https://api.ruangnode.me</code> · Bahasa: Bahasa Indonesia · Format: JSON</p>
+</div>
+
+<div class="card">
+  <h2>1. Gerbang Access Token</h2>
+  <p>Website ini terkunci penuh. Tanpa Access Token, pengunjung hanya melihat layar kunci dan
+     tidak bisa melakukan request API apa pun. Setelah token benar dimasukkan di layar kunci,
+     server menerbitkan cookie sesi bertanda tangan (berlaku 7 hari, <code>httpOnly</code>).</p>
+</div>
+
+<div class="card">
+  <h2>2. Autentikasi API</h2>
+  <p>Setiap request ke <code>/api/*</code> (kecuali <code>/api/health</code>) wajib menyertakan token lewat salah satu cara:</p>
+  <table>
+    <tr><th>Cara</th><th>Contoh</th></tr>
+    <tr><td>Header</td><td><code>X-Access-Token: TOKEN_KAMU</code></td></tr>
+    <tr><td>Header</td><td><code>Authorization: Bearer TOKEN_KAMU</code></td></tr>
+    <tr><td>Query</td><td><code>?token=TOKEN_KAMU</code></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>3. Format Respons</h2>
+  <p>Sukses:</p>
+  <pre>{
+  "status": true,
+  "creator": "RuangNode",
+  "result": {
+    "phase": "Fase Website",
+    "categories": [ ... ]
+  }
+}</pre>
+  <p>Gagal (contoh token salah):</p>
+  <pre>{
+  "status": false,
+  "creator": "RuangNode",
+  "message": "Unauthorized: Access Token tidak ada atau salah."
+}</pre>
+</div>
+
+<div class="card">
+  <h2>4. Contoh Request</h2>
+  <pre>curl -s "https://api.ruangnode.me/api" \
+  -H "X-Access-Token: TOKEN_KAMU" | python3 -m json.tool
+
+# cek liveness (publik, tanpa token)
+curl -s https://api.ruangnode.me/api/health</pre>
+</div>
+
+<div class="card">
+  <h2>5. Kode Error</h2>
+  <table>
+    <tr><th>Kode</th><th>Arti</th><th>Penyebab umum</th></tr>
+    <tr><td>401</td><td>Unauthorized</td><td>Token tidak disertakan atau salah</td></tr>
+    <tr><td>404</td><td>Not Found</td><td>Path endpoint tidak ada</td></tr>
+    <tr><td>429</td><td>Too Many Requests</td><td>Terlalu banyak request (bila rate limit diaktifkan)</td></tr>
+    <tr><td>500</td><td>Internal Server Error</td><td>Kesalahan tak terduga di server</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>6. Peta Modul</h2>
+  <table>
+    <tr><th>Kategori</th><th>Endpoint Rencana</th><th>Status</th></tr>
+    {% for c in categories %}
+    <tr><td>{{ c.name }}</td><td>{{ c.planned }}</td><td><span class="badge soon">Segera</span></td></tr>
+    {% endfor %}
+    <tr><td><b>Total</b></td><td><b>{{ planned_total }}</b></td><td></td></tr>
+  </table>
+  <p>Endpoint aktif saat ini:</p>
+  <table>
+    <tr><th>Method</th><th>Path</th><th>Keterangan</th></tr>
+    {% for e in active %}
+    <tr><td>{{ e.method }}</td><td>{{ e.path }}</td><td>{{ e.desc }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

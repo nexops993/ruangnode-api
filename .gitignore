@@ -1,0 +1,22 @@
+# Kredensial & secret — JANGAN PERNAH commit file ini
+.env
+*.env
+env
+/etc/ruangnode-api/
+**/*secret*
+**/*token*.json
+**/credentials*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

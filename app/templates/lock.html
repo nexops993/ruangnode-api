@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Masuk · RuangNode API{% endblock %}
+{% block content %}
+<div class="card hero">
+  <div class="emoji">🔐</div>
+  <h1>RuangNode API</h1>
+  <p style="max-width:520px;margin:0 auto 8px">
+    REST API pribadi — payung multi-modul: Download, AI, Tools, Stalk, Pterodactyl, RE, Info, dan Maker.
+    Seluruh website dan semua request API terkunci dan hanya bisa dibuka dengan
+    <b>Access Token</b>.
+  </p>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <form method="post" action="/unlock" style="max-width:460px;margin:26px auto 0">
+    <input class="token" type="password" name="token" placeholder="Tempel Access Token di sini…" autocomplete="off" required autofocus>
+    <div style="margin-top:18px"><button class="btn" type="submit">Buka Dashboard →</button></div>
+  </form>
+  <p style="font-size:13px;margin-top:22px">Sesi berlaku 7 hari di perangkat ini setelah token benar.</p>
+</div>
+{% endblock %}

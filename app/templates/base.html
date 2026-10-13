@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}RuangNode API{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --text:#3b3550; --muted:#7c7594; --accent:#7c6cf0; --accent2:#ff9d76;
+    --mint:#bfe9d2; --peach:#ffd9c2; --lav:#ddd3f7;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; color:var(--text);
+    font-family:"Plus Jakarta Sans",system-ui,sans-serif;
+    background:
+      radial-gradient(900px 500px at 8% -5%, #efe9fd 0%, transparent 60%),
+      radial-gradient(800px 480px at 105% 10%, #dff3e6 0%, transparent 60%),
+      radial-gradient(900px 520px at 50% 115%, #fde9d7 0%, transparent 60%),
+      linear-gradient(160deg,#f4f1fc 0%,#eef7f1 55%,#fdf3ea 100%);
+    min-height:100vh;
+  }
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 20px 64px}
+  header.glass{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.55);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid rgba(255,255,255,.7);
+  }
+  header .bar{max-width:1060px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:18px}
+  .logo{font-weight:800;font-size:20px;letter-spacing:.2px}
+  .logo span{color:var(--accent)}
+  nav{margin-left:auto;display:flex;gap:10px;align-items:center}
+  nav a.navlink{font-weight:700;color:var(--text);padding:10px 16px;border-radius:14px;background:rgba(255,255,255,.6);
+    box-shadow:3px 3px 8px rgba(163,177,198,.35),-3px -3px 8px rgba(255,255,255,.9)}
+  nav a.navlink:hover{background:#fff}
+  .btn{
+    display:inline-block;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:16px;
+    color:#fff;background:linear-gradient(135deg,var(--accent),#5a4bd6);
+    padding:14px 30px;border-radius:20px;
+    box-shadow:6px 6px 16px rgba(124,108,240,.4),-4px -4px 10px rgba(255,255,255,.8),
+      inset 2px 2px 4px rgba(255,255,255,.35);
+    transition:transform .08s ease;
+  }
+  .btn:active{transform:translateY(2px);
+    box-shadow:inset 4px 4px 10px rgba(0,0,0,.18),inset -3px -3px 8px rgba(255,255,255,.25)}
+  .btn.ghost{background:#fff;color:var(--accent);
+    box-shadow:5px 5px 12px rgba(163,177,198,.4),-4px -4px 10px rgba(255,255,255,.9)}
+  .card{
+    background:rgba(255,255,255,.88);border-radius:28px;padding:28px;margin:22px 0;
+    box-shadow:10px 10px 26px rgba(163,177,198,.38),-10px -10px 26px rgba(255,255,255,.95),
+      inset 2px 2px 6px rgba(255,255,255,.9),inset -2px -2px 6px rgba(163,177,198,.16);
+  }
+  h1{font-size:40px;margin:6px 0 10px;letter-spacing:-.5px}
+  h2{font-size:24px;margin:0 0 12px}
+  h3{margin:0 0 8px}
+  p{line-height:1.7;color:var(--muted)}
+  .hero{text-align:center;padding:56px 30px}
+  .hero .emoji{font-size:54px}
+  input.token{
+    width:100%;font-family:"JetBrains Mono",monospace;font-size:16px;color:var(--text);
+    padding:16px 20px;border:0;border-radius:18px;background:#f3f0fd;outline:none;
+    box-shadow:inset 5px 5px 12px rgba(163,177,198,.4),inset -5px -5px 12px rgba(255,255,255,.95);
+  }
+  input.token:focus{background:#fff}
+  .err{background:#ffe4e0;color:#b3261e;font-weight:700;border-radius:16px;padding:12px 18px;margin:14px 0}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px}
+  .stat{text-align:center;padding:22px 12px}
+  .stat .num{font-size:38px;font-weight:800;color:var(--accent)}
+  .stat .lbl{font-weight:700;color:var(--muted);font-size:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+  .mod{padding:22px}
+  .mod .count{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--muted)}
+  .badge{display:inline-block;font-size:12px;font-weight:800;padding:6px 14px;border-radius:999px;margin-top:10px}
+  .soon{background:var(--peach);color:#a34d1f}
+  .live{background:var(--mint);color:#1d6b43}
+  code,pre{font-family:"JetBrains Mono",monospace}
+  pre{background:#f1eefc;border-radius:14px;padding:16px;overflow-x:auto;font-size:13.5px;line-height:1.6;
+    box-shadow:inset 3px 3px 8px rgba(163,177,198,.3)}
+  table{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:14.5px}
+  th{text-align:left;color:var(--muted);font-size:13px;padding:4px 10px}
+  td{background:rgba(255,255,255,.7);padding:12px 10px}
+  td:first-child{border-radius:14px 0 0 14px;font-family:"JetBrains Mono",monospace;font-size:13px}
+  td:last-child{border-radius:0 14px 14px 0}
+  .foot{text-align:center;color:var(--muted);font-size:13px;padding:30px 0 10px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<header class="glass">
+  <div class="bar">
+    <div class="logo">🛰️ RuangNode <span>API</span></div>
+    <nav>{% block nav %}{% endblock %}</nav>
+  </div>
+</header>
+<div class="wrap">
+  {% block content %}{% endblock %}
+  <div class="foot">RuangNode API · Fase Website · Dibuat dengan FastAPI</div>
+</div>
+</body>
+</html>
