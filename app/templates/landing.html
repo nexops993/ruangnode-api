@@ -38,7 +38,7 @@
       <div class="tile t-{{ c.icon }}">{{ icon(c.icon, 21) }}</div>
       <h3>{{ c.name }}</h3>
       <p>{{ c.desc }}</p>
-      <div class="foot"><span class="count">{{ c.planned }} endpoint</span><span class="badge soon">Segera</span></div>
+      <div class="foot"><span class="count">{{ c.planned }} endpoint</span>{% if c.status == 'aktif' %}<span class="badge live">Aktif</span>{% else %}<span class="badge soon">Segera</span>{% endif %}</div>
     </div>
     {% endfor %}
   </div>

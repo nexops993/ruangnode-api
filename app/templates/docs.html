@@ -68,7 +68,7 @@ curl -s https://api.ruangnode.me/api/health</code></pre>
   <table>
     <tr><th>Kategori</th><th>Rencana</th><th>Status</th></tr>
     {% for c in categories %}
-    <tr><td>{{ c.name }}</td><td class="mono">{{ c.planned }} endpoint</td><td><span class="badge soon">Segera</span></td></tr>
+    <tr><td>{{ c.name }}</td><td class="mono">{{ c.planned }} endpoint</td><td>{% if c.status == 'aktif' %}<span class="badge live">Aktif</span>{% else %}<span class="badge soon">Segera</span>{% endif %}</td></tr>
     {% endfor %}
     <tr><td><b>Total</b></td><td class="mono"><b>{{ planned_total }}</b></td><td></td></tr>
   </table>

@@ -203,7 +203,7 @@ def catalog_context(request: Request) -> dict:
         "categories": CATEGORIES,
         "planned_total": PLANNED_TOTAL,
         "active": ACTIVE_ENDPOINTS,
-        "phase": "Fase Website",
+        "phase": "Fase Endpoint",
     }
 
 
@@ -293,7 +293,7 @@ async def api_catalog(request: Request):
         "status": True,
         "creator": "RuangNode",
         "result": {
-            "phase": "Fase Website",
+            "phase": "Fase Endpoint",
             "categories": CATEGORIES,
             "planned_total": PLANNED_TOTAL,
             "active_endpoints": ACTIVE_ENDPOINTS,
