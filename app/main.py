@@ -19,6 +19,7 @@ from fastapi.templating import Jinja2Templates
 
 from . import security
 from .routers import download as download_router
+from .routers import media_dl as media_dl_router
 from .security import (
     COOKIE_NAME,
     SESSION_DAYS,
@@ -48,6 +49,7 @@ app = FastAPI(
     openapi_url=None,
 )
 app.include_router(download_router.router)
+app.include_router(media_dl_router.router)
 
 # ----------------------------------------------------------------------------
 # Data katalog (modul dibangun per kategori sampai tuntas)
