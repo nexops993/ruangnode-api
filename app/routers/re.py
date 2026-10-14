@@ -830,14 +830,14 @@ async def re_ipa_strings(ipa: str = Query(default="")):
         def work():
             extract = os.path.join(tmpdir, "x")
             with zipfile.ZipFile(path) as zf:
-                apps = [n for n in zf.namelist()
-                        if n.startswith("Payload/") and n.count("/") == 2
-                        and n.endswith(".app/")]
-                if not apps:
-                    apps = list({"/".join(n.split("/")[:3]) + "/"
-                                 for n in zf.namelist()
-                                 if n.startswith("Payload/")
-                                 and n.split("/")[2].endswith(".app")})
+                apps: list[str] = []
+                for n in zf.namelist():
+                    parts = n.split("/")
+                    if (len(parts) >= 3 and parts[0] == "Payload"
+                            and parts[1].endswith(".app")):
+                        cand = "/".join(parts[:2]) + "/"
+                        if cand not in apps:
+                            apps.append(cand)
                 if not apps:
                     raise ValueError("Struktur IPA tidak valid: "
                                      "Payload/*.app tidak ditemukan.")
