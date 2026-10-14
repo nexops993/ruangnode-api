@@ -1,29 +1,30 @@
 {% extends "base.html" %}
 {% block title %}Dokumentasi · RuangNode API{% endblock %}
 {% block nav %}
-<a class="link" href="/">Dashboard</a>
+<a class="link" href="/">Beranda</a>
 <a class="link" href="/docs">Dokumentasi</a>
-<a class="link keep" href="/logout">Keluar</a>
+<a class="btn sm" href="/login">{{ icon("key", 16) }} Login</a>
 {% endblock %}
 {% block content %}
 <h1 style="margin-top:6px">Dokumentasi</h1>
 <p>Base URL: <code>https://api.ruangnode.me</code> · Format: JSON · Bahasa: Bahasa Indonesia</p>
 
 <div class="card">
-  <h2>1. Gerbang Access Token</h2>
-  <p>Seluruh dashboard, halaman ini, dan semua request API hanya bisa diakses dengan Access Token.
-     Beranda publik hanya menampilkan gambaran umum. Setelah login berhasil, server menerbitkan
-     cookie sesi bertanda tangan (berlaku 7 hari, <code>httpOnly</code>).</p>
+  <h2>1. API Publik, Tanpa Pendaftaran</h2>
+  <p>RuangNode API terbuka untuk siapa pun. Tidak ada pendaftaran, tidak ada akun, tidak ada biaya —
+     cukup sertakan API key publik di setiap request. Halaman ini pun terbuka untuk dibaca semua orang.
+     Hanya dashboard pemilik yang tetap di balik login.</p>
 </div>
 
 <div class="card">
   <h2>2. Autentikasi API</h2>
-  <p>Setiap request ke <code>/api/*</code> (kecuali <code>/api/health</code>) wajib menyertakan token lewat salah satu cara:</p>
+  <p>API key publik: <code class="mono">{{ public_apikey }}</code>. Setiap request ke <code>/api/*</code>
+     (kecuali <code>/api/health</code>) wajib menyertakannya lewat salah satu cara:</p>
   <table>
     <tr><th>Cara</th><th>Contoh</th></tr>
-    <tr><td>Header</td><td class="mono">X-Access-Token: TOKEN_KAMU</td></tr>
-    <tr><td>Header</td><td class="mono">Authorization: Bearer TOKEN_KAMU</td></tr>
-    <tr><td>Query</td><td class="mono">?token=TOKEN_KAMU</td></tr>
+    <tr><td>Query</td><td class="mono">?apikey={{ public_apikey }}</td></tr>
+    <tr><td>Header</td><td class="mono">X-Access-Token: {{ public_apikey }}</td></tr>
+    <tr><td>Header</td><td class="mono">Authorization: Bearer {{ public_apikey }}</td></tr>
   </table>
 </div>
 
@@ -35,20 +36,21 @@
   "creator": "RuangNode",
   "result": { ... }
 }</code></pre>
-  <p>Gagal (contoh token salah):</p>
+  <p>Gagal (contoh tanpa API key):</p>
   <pre><code>{
   "status": false,
   "creator": "RuangNode",
-  "message": "Unauthorized: Access Token tidak ada atau salah."
+  "message": "Unauthorized: API key tidak ada atau salah."
 }</code></pre>
 </div>
 
 <div class="card">
   <h2>4. Contoh Request</h2>
-  <pre><code>curl -s "https://api.ruangnode.me/api" \
-  -H "X-Access-Token: TOKEN_KAMU"
+  <pre><code>curl -s "https://api.ruangnode.me/api?apikey={{ public_apikey }}"
 
-# cek liveness (publik, tanpa token)
+curl -s "https://api.ruangnode.me/api/download/tiktok?url=URL_TIKTOK&amp;apikey={{ public_apikey }}"
+
+# cek liveness (publik, tanpa key)
 curl -s https://api.ruangnode.me/api/health</code></pre>
 </div>
 
@@ -56,9 +58,9 @@ curl -s https://api.ruangnode.me/api/health</code></pre>
   <h2>5. Kode Error</h2>
   <table>
     <tr><th>Kode</th><th>Arti</th><th>Penyebab umum</th></tr>
-    <tr><td class="mono">401</td><td>Unauthorized</td><td>Token tidak disertakan atau salah</td></tr>
+    <tr><td class="mono">401</td><td>Unauthorized</td><td>API key tidak disertakan atau salah</td></tr>
     <tr><td class="mono">404</td><td>Not Found</td><td>Path endpoint tidak ada</td></tr>
-    <tr><td class="mono">429</td><td>Too Many Requests</td><td>Terlalu banyak request (bila rate limit diaktifkan)</td></tr>
+    <tr><td class="mono">429</td><td>Too Many Requests</td><td>Melebihi 600 request / 10 menit per IP, atau IP terkunci akibat key salah berulang</td></tr>
     <tr><td class="mono">500</td><td>Internal Server Error</td><td>Kesalahan tak terduga di server</td></tr>
   </table>
 </div>

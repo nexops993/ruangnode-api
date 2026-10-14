@@ -14,6 +14,11 @@ from fastapi import HTTPException, Request
 
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN", "")
 SESSION_SECRET = os.environ.get("SESSION_SECRET", "")
+
+# API key publik (keputusan pemilik 2026-10-14): API dibuka untuk siapa pun
+# tanpa pendaftaran, cukup sertakan key ini. ACCESS_TOKEN pribadi pemilik
+# tetap berlaku sebagai kunci kedua (akses penuh yang sama).
+PUBLIC_APIKEY = "aditttdev"
 SESSION_DAYS = 7
 COOKIE_NAME = "rn_session"
 
@@ -59,6 +64,29 @@ def clear_fails(ip: str) -> None:
 
 
 # ----------------------------------------------------------------------------
+# Rate limit per-IP untuk request API yang SAH (menjaga stabilitas server
+# karena API key kini publik): longgar untuk pemakaian wajar & bot.
+# ----------------------------------------------------------------------------
+RATE_WINDOW = 600        # detik
+RATE_MAX = 600           # request sah maksimum per IP dalam jendela
+_hits: dict[str, list[float]] = {}
+
+
+def rate_limited(ip: str) -> bool:
+    now = time.time()
+    recent = [t for t in _hits.get(ip, []) if now - t < RATE_WINDOW]
+    _hits[ip] = recent
+    return len(recent) >= RATE_MAX
+
+
+def record_hit(ip: str) -> None:
+    now = time.time()
+    recent = [t for t in _hits.get(ip, []) if now - t < RATE_WINDOW]
+    recent.append(now)
+    _hits[ip] = recent
+
+
+# ----------------------------------------------------------------------------
 # Token & sesi
 # ----------------------------------------------------------------------------
 def clean_token(value: str | None) -> str:
@@ -100,6 +128,8 @@ def token_from_request(request: Request) -> str | None:
             token = auth[7:]
     if not token:
         token = request.query_params.get("token")
+    if not token:
+        token = request.query_params.get("apikey")
     return clean_token(token) or None
 
 
@@ -113,12 +143,23 @@ def require_api_token(request: Request) -> None:
                    "Coba lagi dalam 15 menit.",
         )
     token = token_from_request(request)
-    if not token or not hmac.compare_digest(token, ACCESS_TOKEN):
+    valid = bool(token) and (
+        hmac.compare_digest(token, ACCESS_TOKEN)
+        or hmac.compare_digest(token, PUBLIC_APIKEY)
+    )
+    if not valid:
         record_fail(ip)
         raise HTTPException(
             status_code=401,
-            detail="Unauthorized: Access Token tidak ada atau salah. "
-                   "Sertakan via header X-Access-Token, Authorization: Bearer <token>, "
-                   "atau query ?token=.",
+            detail="Unauthorized: API key tidak ada atau salah. "
+                   "Sertakan API key publik lewat query ?apikey=, "
+                   "header X-Access-Token, atau Authorization: Bearer <apikey>.",
         )
     clear_fails(ip)
+    if rate_limited(ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Batas pemakaian wajar per IP tercapai (600 request / 10 menit). "
+                   "Kurangi kecepatan request Anda.",
+        )
+    record_hit(ip)

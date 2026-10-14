@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}RuangNode API{% endblock %}</title>
-<meta name="description" content="RuangNode API — REST API pribadi multi-modul, terkunci Access Token.">
+<meta name="description" content="RuangNode API — REST API publik multi-modul. Gratis, tanpa daftar, satu API key untuk semua.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -127,6 +127,22 @@
   .step b{color:var(--ink)}
   .foot{color:var(--muted);font-size:13px;text-align:center;padding:26px 0 6px}
   .center{text-align:center}
+  /* sidebar kategori (landing) */
+  .layout{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
+  @media (min-width:900px){ .layout{grid-template-columns:232px minmax(0,1fr)} }
+  .side{padding:12px;position:sticky;top:72px}
+  .side h3{margin:2px 6px 10px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .side nav{margin:0;display:flex;flex-direction:column;gap:4px}
+  .side a{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:12px;color:var(--ink);font-weight:600;font-size:14.5px;border:1px solid transparent}
+  .side a:hover{background:#fbfaff;border-color:var(--line)}
+  .side a .tile{width:28px;height:28px;flex:none}
+  .side a .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:700;background:var(--bg);border-radius:99px;padding:1px 8px}
+  @media (max-width:899px){
+    .side{position:static}
+    .side nav{flex-direction:row;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+    .side a{white-space:nowrap}
+  }
+  .catsec{scroll-margin-top:84px}
 </style>
 </head>
 <body>
@@ -139,7 +155,7 @@
 </header>
 <div class="wrap">
   {% block content %}{% endblock %}
-  <div class="foot">RuangNode API · API pribadi, terkunci Access Token</div>
+  <div class="foot">RuangNode API · REST API publik — gratis, tanpa daftar</div>
 </div>
 </body>
 </html>

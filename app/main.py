@@ -1,8 +1,9 @@
-"""RuangNode API — website + gerbang Access Token.
+"""RuangNode API — website + REST API publik.
 
-Beranda bersifat publik (landing page + tombol Login). Dashboard, dokumentasi,
-dan semua request API hanya bisa diakses dengan Access Token yang benar.
-Satu-satunya endpoint API publik adalah /api/health (cek liveness).
+Beranda dan dokumentasi bersifat publik. Semua request API memakai API key:
+key publik bersama (security.PUBLIC_APIKEY, tanpa pendaftaran) atau Access
+Token pribadi pemilik — keduanya diterima. Dashboard pemilik tetap di balik
+login sesi. Satu-satunya endpoint tanpa key adalah /api/health (liveness).
 """
 
 import hmac
@@ -329,6 +330,17 @@ def _health_view(h: dict) -> dict:
     }
 
 
+def _sidebar_groups() -> list[dict]:
+    """Kelompokkan endpoint aktif per kategori untuk sidebar landing page."""
+    groups = []
+    for c in CATEGORIES:
+        slug = c["name"].lower()
+        prefix = f"/api/{slug}/"
+        eps = [e for e in ACTIVE_ENDPOINTS if e["path"].startswith(prefix)]
+        groups.append({**c, "slug": slug, "endpoints": eps})
+    return groups
+
+
 def catalog_context(request: Request) -> dict:
     health = _read_health()
     return {
@@ -336,6 +348,8 @@ def catalog_context(request: Request) -> dict:
         "categories": CATEGORIES,
         "planned_total": PLANNED_TOTAL,
         "active": ACTIVE_ENDPOINTS,
+        "groups": _sidebar_groups(),
+        "public_apikey": security.PUBLIC_APIKEY,
         "phase": "Fase Endpoint",
         "health": health,
         "health_view": _health_view(health),
@@ -408,8 +422,7 @@ async def logout():
 
 @app.get("/docs", response_class=HTMLResponse)
 async def docs(request: Request):
-    if not page_allowed(request):
-        return RedirectResponse("/login", status_code=303)
+    # Dokumentasi kini publik (API dibuka untuk siapa pun, tanpa pendaftaran).
     return templates.TemplateResponse(request, "docs.html", catalog_context(request))
 
 
