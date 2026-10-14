@@ -3,8 +3,7 @@
 {% block nav %}
 <a class="link" href="#fitur">Fitur</a>
 <a class="link" href="#akses">Cara Pakai</a>
-<a class="link" href="/docs">Dokumentasi</a>
-<a class="btn sm" href="/login">{{ icon("key", 16) }} Login</a>
+<a class="link keep" href="/docs">Dokumentasi</a>
 {% endblock %}
 {% block content %}
 <section class="card" style="padding:30px 24px">
@@ -53,12 +52,14 @@
           {% if g.status == 'aktif' %}<span class="badge live">Aktif</span>{% else %}<span class="badge soon">Segera</span>{% endif %}
         </div>
         <p style="margin:8px 0 12px">{{ g.desc }}</p>
+        <div class="tblwrap">
         <table>
           <tr><th>Method</th><th>Endpoint</th><th>Kegunaan</th></tr>
           {% for e in g.endpoints %}
           <tr><td class="mono">{{ e.method }}</td><td class="mono">{{ e.path }}</td><td>{{ e.desc }}</td></tr>
           {% endfor %}
         </table>
+        </div>
       </section>
       {% endfor %}
     </div>
@@ -84,6 +85,5 @@
   <h2>Dokumentasi lengkap</h2>
   <p>Semua endpoint, contoh request, dan kode error — terbuka untuk dibaca siapa pun.</p>
   <a class="btn" href="/docs" style="margin-top:6px">{{ icon("arrow", 17) }} Buka Dokumentasi</a>
-  <p style="margin:12px 0 0;font-size:13.5px;color:var(--muted)">Pemilik? <a href="/login">Login ke dashboard</a></p>
 </section>
 {% endblock %}

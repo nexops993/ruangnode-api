@@ -139,10 +139,16 @@
   .side a .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:700;background:var(--bg);border-radius:99px;padding:1px 8px}
   @media (max-width:899px){
     .side{position:static}
-    .side nav{flex-direction:row;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+    .side nav{flex-direction:row;flex-wrap:wrap}
     .side a{white-space:nowrap}
+    .side a .cnt{margin-left:2px}
   }
-  .catsec{scroll-margin-top:84px}
+  .catsec{scroll-margin-top:84px;min-width:0}
+  .layout>*{min-width:0}
+  /* tabel lebar: geser DI DALAM kotaknya, tidak melebarkan halaman */
+  .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tblwrap table{min-width:560px}
+  .mono{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
