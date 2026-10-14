@@ -35,7 +35,7 @@ from ..security import require_api_token
 router = APIRouter(prefix="/api/maker", dependencies=[Depends(require_api_token)])
 
 _FONTS = "/usr/share/fonts/truetype/dejavu"
-_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 _EK_META = _DATA_DIR / "emojikitchen-metadata.json"
 _EK_META_URL = ("https://raw.githubusercontent.com/xsalazar/"
                 "emoji-kitchen-backend/main/app/metadata.json")
