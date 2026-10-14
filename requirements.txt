@@ -14,3 +14,4 @@ youtube-transcript-api>=1.0
 shazamio>=0.8
 androguard==4.1.4
 jsbeautifier>=1.15.0
+opencv-python-headless>=4.8,<5

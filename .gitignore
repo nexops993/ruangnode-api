@@ -21,3 +21,6 @@ build/
 .idea/
 .vscode/
 keys/
+
+# Data lokal berukuran besar (bukan kode)
+data/

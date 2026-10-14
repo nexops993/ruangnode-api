@@ -29,6 +29,7 @@ from .routers import stalk as stalk_router
 from .routers import ptero as ptero_router
 from .routers import re as re_router
 from .routers import info as info_router
+from .routers import maker as maker_router
 from . import stats
 from starlette.middleware.base import BaseHTTPMiddleware
 from .security import (
@@ -69,6 +70,7 @@ app.include_router(stalk_router.router)
 app.include_router(ptero_router.router)
 app.include_router(re_router.router)
 app.include_router(info_router.router)
+app.include_router(maker_router.router)
 
 
 class _HitCounterMiddleware(BaseHTTPMiddleware):
@@ -104,7 +106,7 @@ CATEGORIES = [
      "desc": "Reverse engineering: analisis APK/IPA, deobfuscator, inspeksi SSL pinning."},
     {"name": "Info", "icon": "info", "planned": 8, "status": "aktif",
      "desc": "Cek API key, DNS, IP, WHOIS, sertifikat SSL, status website, port, dan peringkat endpoint."},
-    {"name": "Maker", "icon": "maker", "planned": 6, "status": "segera",
+    {"name": "Maker", "icon": "maker", "planned": 6, "status": "aktif",
      "desc": "Generator teks dan gambar: brat, carbon snippet, quote canvas."},
 ]
 PLANNED_TOTAL = sum(c["planned"] for c in CATEGORIES)
@@ -271,6 +273,12 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/info/sslcheck", "desc": "Memeriksa sertifikat SSL sebuah domain: penerbit, masa berlaku, dan sisa hari"},
     {"method": "GET", "path": "/api/info/webstatus", "desc": "Mengecek status sebuah website: kode respons, URL final, dan waktu respons"},
     {"method": "GET", "path": "/api/info/whois", "desc": "Melihat data pendaftaran (WHOIS) sebuah domain: registrar dan tanggal penting"},
+    {"method": "GET", "path": "/api/maker/blurface", "desc": "Mengaburkan wajah pada gambar dari sebuah URL"},
+    {"method": "GET", "path": "/api/maker/brat", "desc": "Membuat gambar teks gaya brat: kotak hijau dengan teks putih khas meme"},
+    {"method": "GET", "path": "/api/maker/carbon", "desc": "Membuat gambar snippet kode cantik dengan syntax highlighting"},
+    {"method": "GET", "path": "/api/maker/emojikitchen", "desc": "Menggabungkan dua emoji menjadi satu stiker ala Emoji Kitchen"},
+    {"method": "GET", "path": "/api/maker/qc", "desc": "Membuat gambar quote canvas: bubble kutipan dengan avatar dan nama"},
+    {"method": "GET", "path": "/api/maker/tonude", "desc": "Tidak disediakan: membuat versi telanjang dari foto orang"},
 ]
 
 # ----------------------------------------------------------------------------
