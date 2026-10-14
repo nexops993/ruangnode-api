@@ -28,6 +28,9 @@ from .routers import tools as tools_router
 from .routers import stalk as stalk_router
 from .routers import ptero as ptero_router
 from .routers import re as re_router
+from .routers import info as info_router
+from . import stats
+from starlette.middleware.base import BaseHTTPMiddleware
 from .security import (
     COOKIE_NAME,
     SESSION_DAYS,
@@ -65,6 +68,23 @@ app.include_router(tools_router.router)
 app.include_router(stalk_router.router)
 app.include_router(ptero_router.router)
 app.include_router(re_router.router)
+app.include_router(info_router.router)
+
+
+class _HitCounterMiddleware(BaseHTTPMiddleware):
+    """Mencatat hit tiap path /api/* untuk /api/info/leaderboard."""
+
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        try:
+            if request.url.path.startswith("/api/"):
+                stats.record(request.url.path)
+        except Exception:
+            pass
+        return response
+
+
+app.add_middleware(_HitCounterMiddleware)
 
 # ----------------------------------------------------------------------------
 # Data katalog (modul dibangun per kategori sampai tuntas)
@@ -82,8 +102,8 @@ CATEGORIES = [
      "desc": "Kelola panel game server: server, user, suspend, restart."},
     {"name": "RE", "icon": "re", "planned": 12, "status": "aktif",
      "desc": "Reverse engineering: analisis APK/IPA, deobfuscator, inspeksi SSL pinning."},
-    {"name": "Info", "icon": "info", "planned": 8, "status": "segera",
-     "desc": "IP lookup, DNS, WHOIS, cek SSL, status website."},
+    {"name": "Info", "icon": "info", "planned": 8, "status": "aktif",
+     "desc": "Cek API key, DNS, IP, WHOIS, sertifikat SSL, status website, port, dan peringkat endpoint."},
     {"name": "Maker", "icon": "maker", "planned": 6, "status": "segera",
      "desc": "Generator teks dan gambar: brat, carbon snippet, quote canvas."},
 ]
@@ -243,6 +263,14 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/re/ipa-strings", "desc": "Mengekstrak endpoint dan string dari biner aplikasi iOS (IPA)"},
     {"method": "GET", "path": "/api/re/ssl-pinning-finder", "desc": "Mendeteksi penerapan SSL pinning di aplikasi Android"},
     {"method": "GET", "path": "/api/re/unity-il2cpp", "desc": "Menganalisis game Unity IL2CPP: versi metadata dan daftar kelas"},
+    {"method": "GET", "path": "/api/info/cekapikey", "desc": "Memeriksa validitas Access Token yang dipakai untuk memanggil API"},
+    {"method": "GET", "path": "/api/info/dnslookup", "desc": "Melihat record DNS sebuah domain: A, AAAA, MX, NS, TXT, CNAME, atau semuanya"},
+    {"method": "GET", "path": "/api/info/iplookup", "desc": "Melihat info geolokasi dan ISP dari sebuah IP atau domain"},
+    {"method": "GET", "path": "/api/info/leaderboard", "desc": "Menampilkan peringkat endpoint yang paling sering dipanggil di server ini"},
+    {"method": "GET", "path": "/api/info/portscan", "desc": "Memeriksa port TCP yang terbuka pada sebuah host"},
+    {"method": "GET", "path": "/api/info/sslcheck", "desc": "Memeriksa sertifikat SSL sebuah domain: penerbit, masa berlaku, dan sisa hari"},
+    {"method": "GET", "path": "/api/info/webstatus", "desc": "Mengecek status sebuah website: kode respons, URL final, dan waktu respons"},
+    {"method": "GET", "path": "/api/info/whois", "desc": "Melihat data pendaftaran (WHOIS) sebuah domain: registrar dan tanggal penting"},
 ]
 
 # ----------------------------------------------------------------------------
