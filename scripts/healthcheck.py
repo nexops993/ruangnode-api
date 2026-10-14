@@ -39,21 +39,27 @@ def load_env(path: str) -> dict:
 
 def http_json(url: str, headers: dict | None = None, timeout: float = 20.0,
               params: dict | None = None):
+    """Kembalikan (http_status | None, body, ms). HTTP error tetap dibaca."""
     t0 = time.time()
+    full = url
+    if params:
+        full += "?" + urllib.parse.urlencode(params)
     try:
-        full = url
-        if params:
-            full += "?" + urllib.parse.urlencode(params)
         req = urllib.request.Request(full, headers=headers or {})
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            return True, json.load(r), int((time.time() - t0) * 1000)
+            return r.status, json.load(r), int((time.time() - t0) * 1000)
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, json.load(e), int((time.time() - t0) * 1000)
+        except Exception:  # noqa: BLE001
+            return e.code, e.read(200), int((time.time() - t0) * 1000)
     except Exception as e:  # noqa: BLE001
-        return False, str(e)[:140], int((time.time() - t0) * 1000)
+        return None, str(e)[:140], int((time.time() - t0) * 1000)
 
 
 def main() -> None:
     env = load_env(ENV_FILE)
-    token = env.get("RUANGNODE_API_ACCESS_TOKEN", "")
+    token = env.get("ACCESS_TOKEN") or env.get("RUANGNODE_API_ACCESS_TOKEN", "")
     ah = {"X-Access-Token": token}
 
     now = datetime.datetime.now(WIB)
@@ -74,8 +80,8 @@ def main() -> None:
         out["engines"]["ytdlp"] = {"ok": False, "version": str(e)[:60]}
 
     # Cobalt langsung
-    ok, body, ms = http_json(COBALT + "/", timeout=10.0)
-    if ok and isinstance(body, dict):
+    status, body, ms = http_json(COBALT + "/", timeout=10.0)
+    if status == 200 and isinstance(body, dict):
         cob = body.get("cobalt") or {}
         out["engines"]["cobalt"] = {"ok": True,
                                     "version": str(cob.get("version"))}
@@ -87,23 +93,23 @@ def main() -> None:
                           "ms": ms})
 
     # API hidup
-    ok, _, ms = http_json(BASE + "/api/health", timeout=15.0)
-    out["checks"].append({"name": "api", "ok": ok, "ms": ms})
+    status, _, ms = http_json(BASE + "/api/health", timeout=15.0)
+    out["checks"].append({"name": "api", "ok": status == 200, "ms": ms})
 
     # Wakil endpoint unduhan: ytmp4 YouTube (harus berhasil via yt-dlp/cobalt)
-    ok, body, ms = http_json(BASE + "/api/download/ytmp4", headers=ah,
-                             timeout=150.0, params={"url": YT_SAMPLE})
+    status, body, ms = http_json(BASE + "/api/download/ytmp4", headers=ah,
+                                 timeout=150.0, params={"url": YT_SAMPLE})
     engine_ok = False
-    if ok and isinstance(body, dict):
+    if status == 200 and isinstance(body, dict):
         res = body.get("result") or {}
         engine_ok = res.get("engine") in ("yt-dlp", "cobalt") and bool(
             res.get("download"))
     out["checks"].append({"name": "ytmp4 (YouTube)", "ok": engine_ok, "ms": ms})
 
     # Wakil endpoint lokal murni (tanpa upstream)
-    ok, _, ms = http_json(BASE + "/api/tools/text2base64", headers=ah,
-                          timeout=20.0, params={"text": "cek"})
-    out["checks"].append({"name": "text2base64", "ok": ok, "ms": ms})
+    status, _, ms = http_json(BASE + "/api/tools/text2base64", headers=ah,
+                              timeout=20.0, params={"text": "cek"})
+    out["checks"].append({"name": "text2base64", "ok": status == 200, "ms": ms})
 
     os.makedirs(os.path.dirname(DEST), exist_ok=True)
     tmp = DEST + ".tmp"
