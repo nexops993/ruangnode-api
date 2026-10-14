@@ -5,6 +5,7 @@
 <a class="link" href="#akses">Cara Pakai</a>
 <a class="link keep" href="/docs">Dokumentasi</a>
 {% endblock %}
+{% block sidebtn %}<button class="hambtn" id="sidebtn" type="button" aria-label="Buka sidebar">{{ icon("menu", 20) }}</button>{% endblock %}
 {% block content %}
 <section class="card" style="padding:30px 24px">
   <span class="eyebrow">{{ icon("shield", 14) }} REST API Publik</span>
@@ -17,7 +18,7 @@
 
 <div class="row" id="fitur" style="justify-content:space-between;margin:22px 2px 12px;scroll-margin-top:84px">
   <h2 style="margin:0">Kategori &amp; Fitur</h2>
-  <button class="btn sm sidebtn" id="sidebtn" type="button">{{ icon("layers", 16) }} Semua Kategori &amp; Fitur</button>
+  <span class="count">buka lewat tombol hamburger di kiri atas</span>
 </div>
 
 <div class="explorer">
@@ -48,9 +49,9 @@
 
       <section class="card" style="padding:20px;margin-bottom:14px">
         <h3 style="margin-top:0">Jelajahi lewat sidebar</h3>
-        <p style="margin:0">Seluruh {{ categories|length }} kategori dan {{ active|length }} fiturnya ada di sidebar kiri.
-           Klik nama endpoint mana pun untuk melihat kegunaan dan contoh request-nya di panel ini.
-           Di ponsel, sidebar dibuka lewat tombol <b>Semua Kategori &amp; Fitur</b> di atas.</p>
+        <p style="margin:0">Seluruh {{ categories|length }} kategori dan {{ active|length }} fiturnya ada di sidebar.
+           Tekan <b>tombol hamburger di kiri atas</b> untuk membukanya, lalu klik nama endpoint mana pun
+           untuk melihat kegunaan dan contoh request-nya di panel ini.</p>
       </section>
 
       <section id="akses" class="card" style="padding:20px;scroll-margin-top:84px">

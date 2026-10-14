@@ -127,12 +127,18 @@
   .step b{color:var(--ink)}
   .foot{color:var(--muted);font-size:13px;text-align:center;padding:26px 0 6px}
   .center{text-align:center}
-  /* explorer: sidebar beneran (semua kategori + endpoint) + panel konten */
+  /* explorer: sidebar laci (tersembunyi; dibuka tombol hamburger kiri atas) */
   .explorer{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
-  @media (min-width:900px){ .explorer{grid-template-columns:268px minmax(0,1fr)} }
   .explorer>*{min-width:0}
-  .side{padding:14px 12px}
-  @media (min-width:900px){ .side{position:sticky;top:72px;max-height:calc(100vh - 92px);overflow-y:auto} }
+  .hambtn{width:38px;height:38px;flex:none;border-radius:11px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;box-shadow:var(--shadow);padding:0}
+  .hambtn:hover{background:#fbfaff}
+  .side{padding:14px 12px;position:fixed;top:0;bottom:0;left:0;width:min(324px,86vw);z-index:80;
+    border-radius:0;transform:translateX(-105%);transition:transform .22s ease;overflow-y:auto}
+  .side.open{transform:none;box-shadow:0 0 60px rgba(44,40,66,.35)}
+  .backdrop{position:fixed;inset:0;background:rgba(44,40,66,.45);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
+  .backdrop.on{opacity:1;pointer-events:auto}
   .side .ov{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:12px;color:var(--ink);font-weight:700;font-size:14.5px;border:1px solid transparent}
   .side .ov:hover,.side a.ep:hover{background:#fbfaff;border-color:var(--line)}
   .side .ov.on{background:rgba(108,92,231,.10);color:var(--accent-dark);border-color:rgba(108,92,231,.25)}
@@ -144,17 +150,7 @@
   .side a.ep.on{background:rgba(108,92,231,.10);color:var(--accent-dark);border-color:rgba(108,92,231,.25)}
   .side a.ep .m{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:600;color:var(--live-tx);background:var(--live-bg);border-radius:6px;padding:1px 6px;flex:none}
   .side a.ep .p{font-family:"JetBrains Mono",monospace;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .side .x{display:none}
-  .sidebtn{display:none}
-  .backdrop{display:none}
-  @media (max-width:899px){
-    .sidebtn{display:inline-flex}
-    .side{position:fixed;top:0;bottom:0;left:0;width:min(324px,86vw);z-index:80;border-radius:0;transform:translateX(-105%);transition:transform .22s ease;overflow-y:auto}
-    .side.open{transform:none;box-shadow:0 0 60px rgba(44,40,66,.35)}
-    .side .x{display:flex;margin-left:auto}
-    .backdrop{display:block;position:fixed;inset:0;background:rgba(44,40,66,.45);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
-    .backdrop.on{opacity:1;pointer-events:auto}
-  }
+  .side .x{display:flex;margin-left:auto}
   /* tabel lebar: geser DI DALAM kotaknya, tidak melebarkan halaman */
   .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .tblwrap table{min-width:560px}
@@ -165,6 +161,7 @@
 {% from "_icons.html" import icon %}
 <header>
   <div class="bar">
+    {% block sidebtn %}{% endblock %}
     <a class="brand" href="/"><span class="mark">{{ icon("logo", 20) }}</span>RuangNode&nbsp;<em>API</em></a>
     <nav>{% block nav %}{% endblock %}</nav>
   </div>
