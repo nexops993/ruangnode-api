@@ -223,6 +223,7 @@ def _fetch_cert(domain: str) -> dict:
     with socket.create_connection((domain, 443), timeout=12) as raw:
         with ctx.wrap_socket(raw, server_hostname=domain) as tls:
             cert = tls.getpeercert()
+            tls_version = tls.version()
     fmt = "%b %d %H:%M:%S %Y %Z"
     nb = datetime.strptime(cert["notBefore"], fmt).replace(tzinfo=timezone.utc)
     na = datetime.strptime(cert["notAfter"], fmt).replace(tzinfo=timezone.utc)
@@ -238,7 +239,7 @@ def _fetch_cert(domain: str) -> dict:
         "expired": na < now,
         "days_remaining": max(0, (na - now).days),
         "san": sans,
-        "tls_version": None,
+        "tls_version": tls_version,
     }
 
 
