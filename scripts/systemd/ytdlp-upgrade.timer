@@ -1,0 +1,9 @@
+[Unit]
+Description=Jadwal upgrade mingguan yt-dlp RuangNode API
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

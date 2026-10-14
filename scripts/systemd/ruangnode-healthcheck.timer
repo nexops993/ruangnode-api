@@ -1,0 +1,10 @@
+[Unit]
+Description=Jadwal health-check RuangNode API tiap 15 menit
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

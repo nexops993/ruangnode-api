@@ -6,6 +6,7 @@ Satu-satunya endpoint API publik adalah /api/health (cek liveness).
 """
 
 import hmac
+import json
 import os
 
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -89,6 +90,7 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/download/ytmp4", "desc": "Mengambil info dan tautan unduhan video YouTube"},
     {"method": "GET", "path": "/api/download/ytmp3", "desc": "Mengambil info dan tautan audio dari video YouTube"},
     {"method": "GET", "path": "/api/download/ytmp3/file", "desc": "Mengonversi video YouTube menjadi file MP3"},
+    {"method": "GET", "path": "/api/download/cobalt/file", "desc": "Mengunduh media lewat mesin Cobalt (relay file server)"},
     {"method": "GET", "path": "/api/download/ytpost", "desc": "Melihat detail postingan komunitas YouTube: teks, gambar, dan penulis"},
     {"method": "GET", "path": "/api/download/bilibili", "desc": "Mengambil info dan tautan unduhan video Bilibili"},
     {"method": "GET", "path": "/api/download/dailymotion", "desc": "Mengambil info dan tautan unduhan video Dailymotion"},
@@ -197,13 +199,48 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 # ----------------------------------------------------------------------------
 # Halaman web
 # ----------------------------------------------------------------------------
+def _read_health() -> dict:
+    """Baca hasil health-check berkala (ditulis scripts/healthcheck.py).
+
+    Tidak pernah melempar — dashboard harus tetap tampil walau file belum ada.
+    """
+    try:
+        with open(os.path.join(BASE_DIR, "static", "health.json"),
+                  encoding="utf-8") as f:
+            d = json.load(f)
+        if isinstance(d, dict):
+            return d
+    except (OSError, ValueError):
+        pass
+    return {}
+
+
+def _health_view(h: dict) -> dict:
+    """Ringkasan health untuk template (logika keluar dari HTML)."""
+    eng = h.get("engines") or {}
+    yd = eng.get("ytdlp") or {}
+    cb = eng.get("cobalt") or {}
+    return {
+        "has": bool(h),
+        "checked_at": h.get("checked_at_display") or h.get("checked_at") or "",
+        "ytdlp_ok": bool(yd.get("ok")),
+        "ytdlp_ver": str(yd.get("version") or ""),
+        "cobalt_ok": bool(cb.get("ok")),
+        "cobalt_ver": str(cb.get("version") or ""),
+        "checks": h.get("checks") or [],
+    }
+
+
 def catalog_context(request: Request) -> dict:
+    health = _read_health()
     return {
         "request": request,
         "categories": CATEGORIES,
         "planned_total": PLANNED_TOTAL,
         "active": ACTIVE_ENDPOINTS,
         "phase": "Fase Endpoint",
+        "health": health,
+        "health_view": _health_view(health),
     }
 
 

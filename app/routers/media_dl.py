@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import tempfile
+from urllib.parse import quote
 
 import httpx
 import yt_dlp
@@ -25,6 +26,12 @@ from ..common import (
     require_url,
     safe_filename,
     upstream_fail,
+)
+from ..engines import (
+    cobalt_fetch,
+    cobalt_tunnel_url,
+    download_to_temp,
+    title_from_filename,
 )
 from ..security import require_api_token
 
@@ -57,6 +64,63 @@ YT_NAV_HEADERS = {
 }
 
 MAX_MP3_SECONDS = 20 * 60  # ytmp3/file menolak video > 20 menit
+
+
+# ----------------------------------------------------------------------------
+# Relay Cobalt: tunnel Cobalt (127.0.0.1) tidak bisa dijangkau klien publik,
+# jadi server mem-proxy file-nya lewat endpoint ini (tetap di balik token).
+# ----------------------------------------------------------------------------
+def _guess_media(filename: str | None, mode: str) -> tuple[str, str]:
+    fn = (filename or "").lower()
+    if fn.endswith(".mp3") or mode == "audio":
+        return "audio/mpeg", ".mp3"
+    if fn.endswith(".webm"):
+        return "video/webm", ".webm"
+    return "video/mp4", ".mp4"
+
+
+async def _cobalt_file_response(page_url: str, mode: str = "auto"):
+    """Ambil tunnel Cobalt untuk page_url lalu stream file-nya ke klien."""
+    data, err = await cobalt_fetch(page_url, mode=mode)
+    if data is None:
+        upstream_fail(f"Mesin Cobalt gagal memproses URL ini ({err}).")
+    if data.get("cobalt_status") == "picker":
+        upstream_fail("Cobalt mengembalikan beberapa item (mis. carousel) — "
+                      "relay file hanya untuk satu media.")
+    tunnel = cobalt_tunnel_url(data)
+    if not tunnel:
+        upstream_fail("Cobalt tidak memberikan tautan file untuk URL ini.")
+    media, suffix = _guess_media(data.get("filename"), mode)
+    fname = title_from_filename(data.get("filename"))
+    try:
+        path, size = await download_to_temp(tunnel, suffix=suffix)
+    except httpx.HTTPError:
+        upstream_fail("Gagal mengambil file dari tunnel Cobalt.")
+    if size == 0:
+        upstream_fail("File dari tunnel Cobalt kosong.")
+    return FileResponse(
+        path, media_type=media,
+        filename=f"{safe_filename(fname or 'media', 'media')}{suffix}",
+    )
+
+
+def _cobalt_relay_url(page_url: str, mode: str = "auto") -> str:
+    return (f"/api/download/cobalt/file?url={quote(page_url, safe='')}"
+            f"&mode={mode}")
+
+
+@router.get("/cobalt/file")
+async def download_cobalt_file(url: str = Query(default=""),
+                               mode: str = Query(default="auto")):
+    """Unduh media via mesin Cobalt (fallback untuk dinding platform).
+
+    mode: auto (video) | audio (MP3) | mute (video tanpa suara).
+    """
+    url = require_url(url)
+    mode = (mode or "auto").strip().lower()
+    if mode not in ("auto", "audio", "mute"):
+        bad_request("mode harus salah satu: auto, audio, mute.")
+    return await _cobalt_file_response(url, mode=mode)
 
 
 # ----------------------------------------------------------------------------
@@ -257,15 +321,43 @@ async def download_ytmp4(url: str = Query(default=""), quality: int = Query(defa
         if not dl:
             upstream_fail("Tidak ada format video yang bisa diambil untuk URL ini.")
         result = _meta(info)
+        result["engine"] = "yt-dlp"
         result["download"] = dl
         return ok(result)
+    fails = [f"yt-dlp: {err[:160]}"]
+    # Fallback: mesin Cobalt (terbukti menembus dinding bot YouTube dari IP ini).
+    cob, cob_err = await cobalt_fetch(url, mode="auto")
+    if cob and cobalt_tunnel_url(cob):
+        meta = await _oembed_meta(url, "https://www.youtube.com/oembed") or {}
+        fname = cob.get("filename")
+        return ok({
+            "title": meta.get("title") or title_from_filename(fname),
+            "uploader": meta.get("uploader"),
+            "duration": meta.get("duration"),
+            "thumbnail": meta.get("thumbnail"),
+            "webpage_url": meta.get("webpage_url") or url,
+            "engine": "cobalt",
+            "download": {
+                "kind": "cobalt-tunnel",
+                "url": _cobalt_relay_url(url, mode="auto"),
+                "filename": fname,
+                "engine": "cobalt",
+            },
+            "note": ("Ekstraksi langsung diblokir YouTube dari IP server ini; "
+                     "unduhan dialihkan via mesin Cobalt — file di-proxy "
+                     "server ini lewat download.url."),
+        })
+    fails.append(f"cobalt: {cob_err[:160]}")
     meta = await _oembed_meta(url, "https://www.youtube.com/oembed")
     if not meta:
-        upstream_fail(f"Ekstraksi gagal: {err}")
+        upstream_fail("YouTube tidak bisa diakses dari server ini: "
+                      + " | ".join(fails))
     meta.update({
         "limited": True,
+        "engine": None,
         "download": None,
-        "note": YOUTUBE_LIMIT_NOTE,
+        "note": ("TERBATAS: " + " | ".join(fails) + " Metadata diambil dari "
+                 "oEmbed resmi YouTube."),
     })
     return ok(meta)
 
@@ -279,19 +371,47 @@ async def download_ytmp3(url: str = Query(default="")):
         if not audio:
             upstream_fail("Tidak ada format audio yang bisa diambil untuk URL ini.")
         result = _meta(info)
+        result["engine"] = "yt-dlp"
         result["audio"] = audio
-        result["file_url"] = f"/api/download/ytmp3/file?url={url}"
+        result["file_url"] = f"/api/download/ytmp3/file?url={quote(url, safe='')}"
         result["note"] = ("audio_url adalah stream audio langsung (bisa m4a/webm/opus). "
                           "Gunakan file_url untuk MP3 hasil konversi server.")
         return ok(result)
+    fails = [f"yt-dlp: {err[:160]}"]
+    # Fallback: mesin Cobalt — audio tunnel (MP3).
+    cob, cob_err = await cobalt_fetch(url, mode="audio", audio_format="mp3")
+    if cob and cobalt_tunnel_url(cob):
+        meta = await _oembed_meta(url, "https://www.youtube.com/oembed") or {}
+        fname = cob.get("filename")
+        return ok({
+            "title": meta.get("title") or title_from_filename(fname),
+            "uploader": meta.get("uploader"),
+            "thumbnail": meta.get("thumbnail"),
+            "webpage_url": meta.get("webpage_url") or url,
+            "engine": "cobalt",
+            "audio": {
+                "kind": "cobalt-tunnel",
+                "url": _cobalt_relay_url(url, mode="audio"),
+                "filename": fname,
+                "engine": "cobalt",
+            },
+            "file_url": f"/api/download/ytmp3/file?url={quote(url, safe='')}",
+            "note": ("Ekstraksi langsung diblokir YouTube dari IP server ini; "
+                     "audio dialihkan via mesin Cobalt (MP3, di-proxy server "
+                     "ini lewat audio.url / file_url)."),
+        })
+    fails.append(f"cobalt: {cob_err[:160]}")
     meta = await _oembed_meta(url, "https://www.youtube.com/oembed")
     if not meta:
-        upstream_fail(f"Ekstraksi gagal: {err}")
+        upstream_fail("YouTube tidak bisa diakses dari server ini: "
+                      + " | ".join(fails))
     meta.update({
         "limited": True,
+        "engine": None,
         "audio": None,
         "file_url": None,
-        "note": YOUTUBE_LIMIT_NOTE,
+        "note": ("TERBATAS: " + " | ".join(fails) + " Metadata diambil dari "
+                 "oEmbed resmi YouTube."),
     })
     return ok(meta)
 
@@ -301,8 +421,8 @@ async def download_ytmp3_file(url: str = Query(default="")):
     url = require_url(url)
     info, err = await _extract_or_none(url)
     if info is None:
-        upstream_fail(f"Konversi MP3 tidak bisa: ekstraksi YouTube diblokir dari IP "
-                      f"server ini ({err[:120]}). Butuh cookie sesi YouTube.")
+        # Fallback: mesin Cobalt memberi tunnel audio MP3 langsung — proxy saja.
+        return await _cobalt_file_response(url, mode="audio")
     dur = info.get("duration") or 0
     if dur > MAX_MP3_SECONDS:
         bad_request(f"Video terlalu panjang ({info.get('duration_string')}). "
@@ -429,16 +549,37 @@ async def download_bilibili(url: str = Query(default="")):
     url = require_url(url)
     info, err = await _extract_or_none(url)
     if info is None:
+        # Fallback: mesin Cobalt (ditest: gagal juga dari IP ini, tapi jalur
+        # tetap dicoba — bila suatu saat hidup, endpoint pulih otomatis).
+        cob, cob_err = await cobalt_fetch(url, mode="auto")
+        if cob and cobalt_tunnel_url(cob):
+            return ok({
+                "title": title_from_filename(cob.get("filename")),
+                "webpage_url": url,
+                "engine": "cobalt",
+                "download": {
+                    "kind": "cobalt-tunnel",
+                    "url": _cobalt_relay_url(url, mode="auto"),
+                    "filename": cob.get("filename"),
+                    "engine": "cobalt",
+                },
+                "note": "Unduhan via mesin Cobalt — file di-proxy server ini.",
+            })
         upstream_fail("Bilibili menolak request dari IP server ini (HTTP 412 — WAF "
-                      f"Bilibili memblokir IP datacenter). Detail: {err[:140]}")
-    return ok(_platform_ok(url, info))
+                      f"Bilibili memblokir IP datacenter; Cobalt juga gagal: "
+                      f"{cob_err[:120]}). Detail: {err[:140]}")
+    res = _platform_ok(url, info)
+    res["engine"] = "yt-dlp"
+    return ok(res)
 
 
 @router.get("/dailymotion")
 async def download_dailymotion(url: str = Query(default="")):
     url = require_url(url)
     info = await _extract(url)
-    return ok(_platform_ok(url, info))
+    res = _platform_ok(url, info)
+    res["engine"] = "yt-dlp"
+    return ok(res)
 
 
 @router.get("/vimeo")
@@ -446,18 +587,41 @@ async def download_vimeo(url: str = Query(default="")):
     url = require_url(url)
     info, err = await _extract_or_none(url)
     if info:
-        return ok(_platform_ok(url, info))
+        res = _platform_ok(url, info)
+        res["engine"] = "yt-dlp"
+        return ok(res)
+    # Fallback: mesin Cobalt (ditest: gagal juga dari IP ini, tapi jalur
+    # tetap dicoba — bila suatu saat hidup, endpoint pulih otomatis).
+    cob, cob_err = await cobalt_fetch(url, mode="auto")
+    if cob and cobalt_tunnel_url(cob):
+        meta = await _oembed_meta(url, "https://vimeo.com/api/oembed.json") or {}
+        return ok({
+            "title": meta.get("title") or title_from_filename(cob.get("filename")),
+            "uploader": meta.get("uploader"),
+            "thumbnail": meta.get("thumbnail"),
+            "webpage_url": meta.get("webpage_url") or url,
+            "engine": "cobalt",
+            "download": {
+                "kind": "cobalt-tunnel",
+                "url": _cobalt_relay_url(url, mode="auto"),
+                "filename": cob.get("filename"),
+                "engine": "cobalt",
+            },
+            "note": "Unduhan via mesin Cobalt — file di-proxy server ini.",
+        })
     # Vimeo memblokir IP server ini (web client butuh login, config 403) —
     # fallback metadata resmi via oEmbed.
     meta = await _oembed_meta(url, "https://vimeo.com/api/oembed.json")
     if not meta:
-        upstream_fail(f"Ekstraksi gagal: {err}")
+        upstream_fail(f"Ekstraksi gagal: yt-dlp: {err[:120]} | "
+                      f"cobalt: {cob_err[:120]}")
     meta.update({
         "limited": True,
+        "engine": None,
         "download": None,
         "note": ("TERBATAS: Vimeo menolak ekstraksi file dari IP server ini "
-                 "(web client butuh login). Metadata dari oEmbed resmi; "
-                 "tautan unduh tidak tersedia."),
+                 "(web client butuh login; Cobalt juga gagal). Metadata dari "
+                 "oEmbed resmi; tautan unduh tidak tersedia."),
     })
     return ok(meta)
 

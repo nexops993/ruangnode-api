@@ -1,0 +1,8 @@
+[Unit]
+Description=RuangNode API health-check (15 menit)
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/home/adit/ruangnode-api/.venv/bin/python /home/adit/ruangnode-api/scripts/healthcheck.py
