@@ -11,79 +11,120 @@
   <h1>RuangNode API</h1>
   <p class="lead">Satu payung API untuk banyak modul — Download, AI, Tools, Stalk, dan lainnya.
      Terbuka untuk siapa pun: gratis, tanpa pendaftaran, cukup satu API key publik.</p>
-  <div class="row" style="margin-top:16px">
-    <a class="btn" href="/docs">Lihat Dokumentasi {{ icon("arrow", 17) }}</a>
-    <a class="btn ghost" href="#fitur">Jelajahi Fitur</a>
-  </div>
   <div class="note">{{ icon("key", 16) }}<span>API key publik: <code class="mono">{{ public_apikey }}</code> —
      sertakan sebagai <code class="mono">?apikey={{ public_apikey }}</code> di setiap request.</span></div>
 </section>
 
-<section class="card stats" aria-label="Statistik">
-  <div class="stat"><div class="num">{{ categories|length }}</div><div class="lbl">Kategori Modul</div></div>
-  <div class="stat"><div class="num">{{ active|length }}</div><div class="lbl">Endpoint Aktif</div></div>
-  <div class="stat"><div class="num">1</div><div class="lbl">API Key Publik</div></div>
-  <div class="stat"><div class="num">0</div><div class="lbl">Biaya — Gratis</div></div>
-</section>
+<div class="row" id="fitur" style="justify-content:space-between;margin:22px 2px 12px;scroll-margin-top:84px">
+  <h2 style="margin:0">Kategori &amp; Fitur</h2>
+  <button class="btn sm sidebtn" id="sidebtn" type="button">{{ icon("layers", 16) }} Semua Kategori &amp; Fitur</button>
+</div>
 
-<section id="fitur" style="scroll-margin-top:84px">
-  <div class="row" style="justify-content:space-between;margin:22px 2px 4px">
-    <h2>Kategori &amp; Fitur</h2>
-    <span class="count">pilih kategori di samping</span>
-  </div>
-  <p style="margin:0 2px 12px">Delapan kategori, {{ active|length }} endpoint aktif — semuanya dirawat dan dites berkala.</p>
-  <div class="layout">
-    <aside class="card side" aria-label="Kategori">
-      <h3>Kategori</h3>
-      <nav>
-        {% for g in groups %}
-        <a href="#kat-{{ g.slug }}"><span class="tile t-{{ g.icon }}">{{ icon(g.icon, 16) }}</span>{{ g.name }}<span class="cnt">{{ g.endpoints|length }}</span></a>
-        {% endfor %}
-      </nav>
-    </aside>
-    <div style="display:grid;gap:14px;min-width:0">
-      {% for g in groups %}
-      <section id="kat-{{ g.slug }}" class="card catsec" style="padding:20px">
-        <div class="row" style="justify-content:space-between;align-items:flex-start">
-          <div class="row" style="gap:10px;align-items:center">
-            <span class="tile t-{{ g.icon }}">{{ icon(g.icon, 20) }}</span>
-            <h3 style="margin:0">{{ g.name }}</h3>
-          </div>
-          {% if g.status == 'aktif' %}<span class="badge live">Aktif</span>{% else %}<span class="badge soon">Segera</span>{% endif %}
-        </div>
-        <p style="margin:8px 0 12px">{{ g.desc }}</p>
-        <div class="tblwrap">
-        <table>
-          <tr><th>Method</th><th>Endpoint</th><th>Kegunaan</th></tr>
-          {% for e in g.endpoints %}
-          <tr><td class="mono">{{ e.method }}</td><td class="mono">{{ e.path }}</td><td>{{ e.desc }}</td></tr>
-          {% endfor %}
-        </table>
-        </div>
-      </section>
+<div class="explorer">
+  <aside class="card side" id="sidebar" aria-label="Semua kategori dan fitur">
+    <div class="row" style="align-items:center;margin-bottom:6px">
+      <b style="font-size:15px">Navigasi Fitur</b>
+      <button class="btn ghost sm x" id="sideclose" type="button" aria-label="Tutup sidebar">&times;</button>
+    </div>
+    <a class="ov on" href="#" id="ovlink">{{ icon("layers", 16) }} Ringkasan</a>
+    {% for g in groups %}
+    <div class="grp">
+      <div class="grp-h"><span class="tile t-{{ g.icon }}">{{ icon(g.icon, 14) }}</span>{{ g.name }}<span class="cnt">{{ g.endpoints|length }}</span></div>
+      {% for e in g.endpoints %}
+      <a class="ep" href="#{{ e.path }}" data-path="{{ e.path }}"><span class="m">{{ e.method }}</span><span class="p">{{ e.path[5:] }}</span></a>
       {% endfor %}
     </div>
-  </div>
-</section>
+    {% endfor %}
+  </aside>
 
-<section id="akses" class="card" style="scroll-margin-top:84px;margin-top:16px">
-  <h2>Cara Pakai</h2>
-  <p>Tiga langkah, tanpa pendaftaran dan tanpa akun.</p>
-  <div class="steps" style="margin-top:14px">
-    <div class="step"><span class="n">1</span><p><b>Pakai API key publik</b><br>
-      Key-nya satu untuk semua orang: <code class="mono">{{ public_apikey }}</code>. Tidak perlu daftar, tidak perlu minta izin.</p></div>
-    <div class="step"><span class="n">2</span><p><b>Sertakan di request</b><br>
-      Tambahkan <code class="mono">?apikey={{ public_apikey }}</code> di URL, atau header <code class="mono">X-Access-Token</code>.</p></div>
-    <div class="step"><span class="n">3</span><p><b>Terima JSON seragam</b><br>
-      Semua respons memakai envelope yang sama: status, creator, dan result.</p></div>
-  </div>
-  <pre><code>curl "https://api.ruangnode.me/api/download/tiktok?url=URL_TIKTOK&amp;apikey={{ public_apikey }}"</code></pre>
-  <p style="margin:10px 0 0">Pemakaian wajar saja — server membatasi 600 request per 10 menit per IP demi kestabilan bersama.</p>
-</section>
+  <div>
+    <div id="overview">
+      <section class="card stats" aria-label="Statistik">
+        <div class="stat"><div class="num">{{ categories|length }}</div><div class="lbl">Kategori Modul</div></div>
+        <div class="stat"><div class="num">{{ active|length }}</div><div class="lbl">Endpoint Aktif</div></div>
+        <div class="stat"><div class="num">1</div><div class="lbl">API Key Publik</div></div>
+        <div class="stat"><div class="num">0</div><div class="lbl">Biaya — Gratis</div></div>
+      </section>
 
-<section class="card center" style="padding:26px 22px">
-  <h2>Dokumentasi lengkap</h2>
-  <p>Semua endpoint, contoh request, dan kode error — terbuka untuk dibaca siapa pun.</p>
-  <a class="btn" href="/docs" style="margin-top:6px">{{ icon("arrow", 17) }} Buka Dokumentasi</a>
-</section>
+      <section class="card" style="padding:20px;margin-bottom:14px">
+        <h3 style="margin-top:0">Jelajahi lewat sidebar</h3>
+        <p style="margin:0">Seluruh {{ categories|length }} kategori dan {{ active|length }} fiturnya ada di sidebar kiri.
+           Klik nama endpoint mana pun untuk melihat kegunaan dan contoh request-nya di panel ini.
+           Di ponsel, sidebar dibuka lewat tombol <b>Semua Kategori &amp; Fitur</b> di atas.</p>
+      </section>
+
+      <section id="akses" class="card" style="padding:20px;scroll-margin-top:84px">
+        <h3 style="margin-top:0">Cara Pakai</h3>
+        <div class="steps" style="margin-top:12px">
+          <div class="step"><span class="n">1</span><p><b>Pakai API key publik</b><br>
+            Key-nya satu untuk semua orang: <code class="mono">{{ public_apikey }}</code>. Tidak perlu daftar.</p></div>
+          <div class="step"><span class="n">2</span><p><b>Sertakan di request</b><br>
+            Tambahkan <code class="mono">?apikey={{ public_apikey }}</code> di URL, atau header <code class="mono">X-Access-Token</code>.</p></div>
+          <div class="step"><span class="n">3</span><p><b>Terima JSON seragam</b><br>
+            Semua respons memakai envelope yang sama: status, creator, dan result.</p></div>
+        </div>
+        <pre><code>curl "https://api.ruangnode.me/api/download/tiktok?url=URL_TIKTOK&amp;apikey={{ public_apikey }}"</code></pre>
+        <p style="margin:10px 0 0">Pemakaian wajar saja — server membatasi 600 request per 10 menit per IP demi kestabilan bersama.
+           Dokumentasi tabel lengkap ada di <a href="/docs">halaman dokumentasi</a>.</p>
+      </section>
+    </div>
+
+    <section id="detail" class="card" style="padding:22px;display:none">
+      <div class="row" style="align-items:center;gap:10px">
+        <span class="badge live" id="d-method">GET</span>
+        <span class="count" id="d-cat"></span>
+      </div>
+      <h2 class="mono" id="d-path" style="font-size:19px;word-break:break-all;margin:10px 0 6px"></h2>
+      <p id="d-desc" style="margin:0 0 14px"></p>
+      <h3 style="margin:0 0 8px">Contoh request</h3>
+      <pre><code id="d-curl"></code></pre>
+      <p style="margin:10px 0 14px">Tambahkan parameter lain sesuai kegunaan endpoint (mis. <code class="mono">url=</code>,
+         <code class="mono">text=</code>, <code class="mono">username=</code>). Respons selalu berbentuk
+         <code class="mono">{"status": true, "creator": "RuangNode", "result": ...}</code>.</p>
+      <button class="btn ghost sm" id="d-back" type="button">Kembali ke ringkasan</button>
+    </section>
+  </div>
+</div>
+<div class="backdrop" id="backdrop"></div>
+
+<script>
+const EP = {
+{% for g in groups %}{% for e in g.endpoints %}"{{ e.path }}": {"m": {{ e.method|tojson }}, "c": {{ g.name|tojson }}, "d": {{ e.desc|tojson }}},
+{% endfor %}{% endfor %}};
+const KEY = {{ public_apikey|tojson }};
+const ov = document.getElementById('overview');
+const det = document.getElementById('detail');
+const side = document.getElementById('sidebar');
+const bd = document.getElementById('backdrop');
+function closeSide(){ side.classList.remove('open'); bd.classList.remove('on'); }
+function showOverview(){
+  det.style.display = 'none'; ov.style.display = 'block';
+  document.querySelectorAll('.side a.ep').forEach(a => a.classList.remove('on'));
+  document.getElementById('ovlink').classList.add('on');
+  history.replaceState(null, '', location.pathname);
+}
+function showDetail(path){
+  const e = EP[path]; if(!e) return;
+  document.getElementById('d-method').textContent = e.m;
+  document.getElementById('d-cat').textContent = 'Kategori ' + e.c;
+  document.getElementById('d-path').textContent = path;
+  document.getElementById('d-desc').textContent = e.d;
+  document.getElementById('d-curl').textContent =
+    'curl "https://api.ruangnode.me' + path + '?apikey=' + KEY + '"';
+  ov.style.display = 'none'; det.style.display = 'block';
+  document.getElementById('ovlink').classList.remove('on');
+  document.querySelectorAll('.side a.ep').forEach(a =>
+    a.classList.toggle('on', a.dataset.path === path));
+  history.replaceState(null, '', '#' + path);
+  closeSide();
+}
+document.querySelectorAll('.side a.ep').forEach(a =>
+  a.addEventListener('click', ev => { ev.preventDefault(); showDetail(a.dataset.path); }));
+document.getElementById('ovlink').addEventListener('click', ev => { ev.preventDefault(); showOverview(); closeSide(); });
+document.getElementById('d-back').addEventListener('click', showOverview);
+document.getElementById('sidebtn').addEventListener('click', () => { side.classList.add('open'); bd.classList.add('on'); });
+document.getElementById('sideclose').addEventListener('click', closeSide);
+bd.addEventListener('click', closeSide);
+if (location.hash && EP[location.hash.slice(1)]) showDetail(location.hash.slice(1));
+</script>
 {% endblock %}
