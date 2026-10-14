@@ -12,3 +12,5 @@ qrcode>=7.0
 pypdf>=4.0
 youtube-transcript-api>=1.0
 shazamio>=0.8
+androguard==4.1.4
+jsbeautifier>=1.15.0

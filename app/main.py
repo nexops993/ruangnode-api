@@ -27,6 +27,7 @@ from .routers import ai as ai_router
 from .routers import tools as tools_router
 from .routers import stalk as stalk_router
 from .routers import ptero as ptero_router
+from .routers import re as re_router
 from .security import (
     COOKIE_NAME,
     SESSION_DAYS,
@@ -63,6 +64,7 @@ app.include_router(ai_router.router)
 app.include_router(tools_router.router)
 app.include_router(stalk_router.router)
 app.include_router(ptero_router.router)
+app.include_router(re_router.router)
 
 # ----------------------------------------------------------------------------
 # Data katalog (modul dibangun per kategori sampai tuntas)
@@ -78,7 +80,7 @@ CATEGORIES = [
      "desc": "Lihat profil publik dari puluhan platform sosial dan game."},
     {"name": "Pterodactyl", "icon": "ptero", "planned": 18, "status": "aktif",
      "desc": "Kelola panel game server: server, user, suspend, restart."},
-    {"name": "RE", "icon": "re", "planned": 12, "status": "segera",
+    {"name": "RE", "icon": "re", "planned": 12, "status": "aktif",
      "desc": "Reverse engineering: analisis APK/IPA, deobfuscator, inspeksi SSL pinning."},
     {"name": "Info", "icon": "info", "planned": 8, "status": "segera",
      "desc": "IP lookup, DNS, WHOIS, cek SSL, status website."},
@@ -229,6 +231,18 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/pterodactyl/offserver", "desc": "Mematikan server Pterodactyl dengan aman (stop)"},
     {"method": "GET", "path": "/api/pterodactyl/restartserver", "desc": "Me-restart server Pterodactyl"},
     {"method": "GET", "path": "/api/pterodactyl/clearserver", "desc": "Menginstal ulang (reinstall) server Pterodactyl"},
+    {"method": "GET", "path": "/api/re/apk-sniffer", "desc": "Meringkas profil APK: paket, versi, SDK, izin, komponen, dan tanda tangan"},
+    {"method": "GET", "path": "/api/re/manifest-decoder", "desc": "Membaca AndroidManifest.xml menjadi JSON: komponen, izin, dan deeplink"},
+    {"method": "GET", "path": "/api/re/apk-secrets", "desc": "Memindai rahasia tertanam di APK: kunci API, token, dan kredensial (teredaksi)"},
+    {"method": "GET", "path": "/api/re/apk-signer", "desc": "Menandatangani APK dengan kunci debug server dan mengunduh hasilnya"},
+    {"method": "GET", "path": "/api/re/blutter", "desc": "Mendeteksi aplikasi Flutter dan menganalisis engine Dart-nya"},
+    {"method": "GET", "path": "/api/re/flutter", "desc": "Menganalisis aplikasi Flutter: versi engine, aset, dan plugin"},
+    {"method": "GET", "path": "/api/re/reactnative", "desc": "Menganalisis aplikasi React Native: engine JS, bundle, dan modul"},
+    {"method": "GET", "path": "/api/re/js-deobfuscator", "desc": "Merapikan bundle JavaScript hasil kompilasi agar mudah dibaca"},
+    {"method": "GET", "path": "/api/re/so-strings", "desc": "Mengekstrak string bermakna dari library native (.so) di APK"},
+    {"method": "GET", "path": "/api/re/ipa-strings", "desc": "Mengekstrak endpoint dan string dari biner aplikasi iOS (IPA)"},
+    {"method": "GET", "path": "/api/re/ssl-pinning-finder", "desc": "Mendeteksi penerapan SSL pinning di aplikasi Android"},
+    {"method": "GET", "path": "/api/re/unity-il2cpp", "desc": "Menganalisis game Unity IL2CPP: versi metadata dan daftar kelas"},
 ]
 
 # ----------------------------------------------------------------------------
