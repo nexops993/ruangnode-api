@@ -66,9 +66,16 @@
   .stat + .stat{border-left:1px solid var(--line)}
   .stat .num{font-size:21px;font-weight:800;letter-spacing:-.01em}
   .stat .lbl{font-size:12.5px;color:var(--muted);font-weight:600}
-  /* grid modul */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
-  @media (min-width:760px){ .grid{grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:14px} }
+  @media (max-width:560px){
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:14px 0;padding:16px 14px}
+    .stat + .stat{border-left:0}
+    .stat:nth-child(even){border-left:1px solid var(--line)}
+    .stat:nth-child(n+3){border-top:1px solid var(--line);padding-top:12px}
+  }
+  /* grid modul — mobile-first: 1 kolom lega di HP, melebar bertahap */
+  .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  @media (min-width:560px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (min-width:900px){ .grid{grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:14px} }
   .mod{padding:16px;margin:0;display:flex;flex-direction:column;gap:2px}
   .tile{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
   .t-download{background:#ece8fd;color:#6c5ce7}.t-ai{background:#e3eefc;color:#2f6fd0}
@@ -104,6 +111,11 @@
   td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
   tr:last-child td{border-bottom:0}
   td.mono{font-family:"JetBrains Mono",monospace;font-size:13px;white-space:nowrap}
+  /* tabel tidak boleh melebar melewati layar HP: tabelnya yang bergeser, bukan halamannya */
+  @media (max-width:700px){
+    table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    code{word-break:break-word}
+  }
   .steps{display:grid;gap:14px}
   @media (min-width:700px){ .steps{grid-template-columns:repeat(3,1fr)} }
   .step{display:flex;gap:12px;align-items:flex-start}
