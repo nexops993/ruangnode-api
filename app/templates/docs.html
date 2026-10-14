@@ -74,7 +74,7 @@ curl -s https://api.ruangnode.me/api/health</code></pre>
   </table>
   <p style="margin-top:14px">Endpoint aktif saat ini:</p>
   <table>
-    <tr><th>Method</th><th>Path</th><th>Keterangan</th></tr>
+    <tr><th>Method</th><th>Path</th><th>Kegunaan</th></tr>
     {% for e in active %}
     <tr><td class="mono">{{ e.method }}</td><td class="mono">{{ e.path }}</td><td>{{ e.desc }}</td></tr>
     {% endfor %}
