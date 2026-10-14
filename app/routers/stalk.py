@@ -434,11 +434,18 @@ async def stalk_pinterest(username: str = Query(default="")):
         if im:
             avatar = im.group(1).replace("\\u0026", "&")
             break
-    if not name and not followers:
+    name_str = name.group(1) if name else None
+    if not name_str:
+        # Fallback: og:title "Nama (username) - Profile | Pinterest"
+        og = _og_meta(html_text)
+        title = og.get("title") or ""
+        nm = re.match(r"(.+?)\s*\(" + ux + r"\)", title, re.I)
+        name_str = nm.group(1).strip() if nm else None
+    if not name_str and not followers:
         upstream_fail("Data profil Pinterest tidak bisa dibaca dari server.")
     return ok({
         "username": username,
-        "name": ihtml.unescape(name.group(1)) if name else None,
+        "name": ihtml.unescape(name_str) if name_str else None,
         "followers": int(followers.group(1)) if followers else None,
         "avatar": avatar,
         "url": final,
