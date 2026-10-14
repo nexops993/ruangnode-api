@@ -380,20 +380,21 @@ async def stalk_threads(user: str = Query(default="")):
 @router.get("/twitter")
 async def stalk_twitter(username: str = Query(default="")):
     username = _require(username, "username").lstrip("@")
-    try:
-        return ok(await _meta_profile("X (Twitter)", f"https://x.com/{username}"))
-    except Exception:  # noqa: BLE001
-        # X sering menolak IP datacenter (403) meski kadang lolos.
-        html_text, final = await fetch_text(f"https://x.com/{username}",
-                                            headers=NAV_HEADERS)
+    # X sering menolak IP datacenter (403) meski kadang lolos — coba 2x.
+    for _ in range(2):
+        try:
+            html_text, final = await fetch_text(f"https://x.com/{username}",
+                                                headers=NAV_HEADERS)
+        except Exception:  # noqa: BLE001
+            continue
         og = _og_meta(html_text)
         if og.get("title"):
-            return ok({"title": og.get("title"), "description": og.get("description"),
+            return ok({"title": og.get("title"),
+                       "description": og.get("description"),
                        "image": og.get("image"), "url": final})
-        return limited(
-            {"username": username},
-            "X (Twitter) membatasi akses profil dari IP server; coba lagi nanti "
-            "atau isi cookie sesi bila tersedia.")
+    return limited(
+        {"username": username},
+        "X (Twitter) membatasi akses profil dari IP server; coba lagi nanti.")
 
 
 @router.get("/facebook")
