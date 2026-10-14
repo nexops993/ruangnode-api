@@ -258,6 +258,21 @@ def _emoji_to_cp(emoji: str) -> str:
     return "-".join(f"{ord(c):x}" for c in emoji)
 
 
+def _cp_variants(emoji: str) -> list[str]:
+    """Kandidat codepoint: apa adanya, tanpa FE0F, dan dengan FE0F.
+
+    Pengirim sering mengirim varian yang berbeda (mis. U+2764 vs U+2764 U+FE0F)
+    sementara metadata Kitchen hanya mengenal salah satunya.
+    """
+    base = _emoji_to_cp(emoji)
+    cands = [base]
+    if base.endswith("-fe0f"):
+        cands.append(base[:-5])
+    else:
+        cands.append(base + "-fe0f")
+    return cands
+
+
 def _ek_load() -> dict:
     global _ek_cache
     if _ek_cache is None:
@@ -289,8 +304,14 @@ async def m_emojikitchen(emoji1: str = Query(default=""),
     if len(e1) > 12 or len(e2) > 12:
         bad_request("Parameter emoji1/emoji2 harus berupa satu emoji.")
     meta = await asyncio.to_thread(_ek_load)
-    url = await asyncio.to_thread(_ek_find_url, meta,
-                                  _emoji_to_cp(e1), _emoji_to_cp(e2))
+    url = None
+    for c1 in _cp_variants(e1):
+        for c2 in _cp_variants(e2):
+            url = await asyncio.to_thread(_ek_find_url, meta, c1, c2)
+            if url:
+                break
+        if url:
+            break
     if not url:
         upstream_fail("Kombinasi emoji tersebut tidak tersedia di Emoji Kitchen.")
     try:
