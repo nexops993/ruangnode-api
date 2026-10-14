@@ -26,6 +26,7 @@ from .routers import host_dl as host_dl_router
 from .routers import ai as ai_router
 from .routers import tools as tools_router
 from .routers import stalk as stalk_router
+from .routers import ptero as ptero_router
 from .security import (
     COOKIE_NAME,
     SESSION_DAYS,
@@ -61,6 +62,7 @@ app.include_router(host_dl_router.router)
 app.include_router(ai_router.router)
 app.include_router(tools_router.router)
 app.include_router(stalk_router.router)
+app.include_router(ptero_router.router)
 
 # ----------------------------------------------------------------------------
 # Data katalog (modul dibangun per kategori sampai tuntas)
@@ -74,7 +76,7 @@ CATEGORIES = [
      "desc": "OCR, konverter, QR, shortener, screenshot web, temp mail, olah PDF."},
     {"name": "Stalk", "icon": "stalk", "planned": 26, "status": "aktif",
      "desc": "Lihat profil publik dari puluhan platform sosial dan game."},
-    {"name": "Pterodactyl", "icon": "ptero", "planned": 18, "status": "segera",
+    {"name": "Pterodactyl", "icon": "ptero", "planned": 18, "status": "aktif",
      "desc": "Kelola panel game server: server, user, suspend, restart."},
     {"name": "RE", "icon": "re", "planned": 12, "status": "segera",
      "desc": "Reverse engineering: analisis APK/IPA, deobfuscator, inspeksi SSL pinning."},
@@ -209,6 +211,24 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/stalk/linkedin", "desc": "Melihat info profil LinkedIn publik"},
     {"method": "GET", "path": "/api/stalk/spotify", "desc": "Melihat info profil atau artis Spotify publik"},
     {"method": "GET", "path": "/api/stalk/roblox", "desc": "Melihat info akun Roblox dari username"},
+    {"method": "GET", "path": "/api/pterodactyl/statuspanel", "desc": "Mengecek status panel Pterodactyl dan menghitung total server serta user"},
+    {"method": "GET", "path": "/api/pterodactyl/listadmin", "desc": "Melihat daftar admin (root_admin) di panel Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/createadmin", "desc": "Membuat akun admin baru di panel Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/setadmin", "desc": "Menaikkan akun panel Pterodactyl menjadi admin"},
+    {"method": "GET", "path": "/api/pterodactyl/deleteadmin", "desc": "Menghapus akun admin dari panel Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/create", "desc": "Membuat server game baru di panel Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/deleteserver", "desc": "Menghapus server dari panel Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/suspend", "desc": "Menangguhkan (suspend) server di panel Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/unsuspend", "desc": "Melepas penangguhan (unsuspend) server di panel Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/checksuspend", "desc": "Mengecek status penangguhan server di panel Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/deleteallserver", "desc": "Menghapus semua server di panel Pterodactyl sekaligus"},
+    {"method": "GET", "path": "/api/pterodactyl/deletealluser", "desc": "Menghapus semua user non-admin di panel Pterodactyl sekaligus"},
+    {"method": "GET", "path": "/api/pterodactyl/listserver", "desc": "Melihat daftar server milik kunci Client API Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/statusserver", "desc": "Melihat status dan pemakaian resource server Pterodactyl secara real-time"},
+    {"method": "GET", "path": "/api/pterodactyl/onserver", "desc": "Menyalakan server Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/offserver", "desc": "Mematikan server Pterodactyl dengan aman (stop)"},
+    {"method": "GET", "path": "/api/pterodactyl/restartserver", "desc": "Me-restart server Pterodactyl"},
+    {"method": "GET", "path": "/api/pterodactyl/clearserver", "desc": "Menginstal ulang (reinstall) server Pterodactyl"},
 ]
 
 # ----------------------------------------------------------------------------
