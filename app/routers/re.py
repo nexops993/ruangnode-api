@@ -442,7 +442,7 @@ async def re_apk_signer(apk: str = Query(default="")):
         resp.headers["X-RuangNode-Cert-SHA256"] = (
             cert.get("sha256", "")[:64])
         resp.headers["X-RuangNode-Signer"] = (
-            "jarsigner v1 (JAR signature); tanpa zipalign — "
+            "jarsigner v1 (JAR signature); tanpa zipalign - "
             "cocok untuk analisis/uji, bukan rilis Play Store")
         return resp
     except HTTPException:
