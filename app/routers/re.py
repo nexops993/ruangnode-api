@@ -332,22 +332,24 @@ async def re_apk_secrets(apk: str = Query(default="")):
                 if len(findings) >= cap:
                     break
                 _scan_text_for_secrets(s, "classes*.dex", findings, seen, cap)
-            # 2) berkas teks di dalam APK (maks 1 MB per berkas, 200 berkas)
-            checked = 0
+            # 2) berkas teks di dalam APK (maks 512 KB per berkas,
+            #    anggaran total 30 MB agar semua berkas terpindai)
+            text_budget = 30 * 1024 * 1024
             with zipfile.ZipFile(path) as zf:
                 for info in zf.infolist():
-                    if len(findings) >= cap or checked >= 200:
+                    if len(findings) >= cap or text_budget <= 0:
                         break
                     name = info.filename
                     if not name.lower().endswith(_TEXT_EXT):
                         continue
-                    if info.file_size > 1024 * 1024:
+                    if info.file_size > 512 * 1024:
                         continue
                     try:
-                        text = zf.read(name).decode("utf-8", "ignore")
+                        raw = zf.read(name)
                     except Exception:
                         continue
-                    checked += 1
+                    text_budget -= len(raw)
+                    text = raw.decode("utf-8", "ignore")
                     _scan_text_for_secrets(text, name, findings, seen, cap)
             return {
                 "package": a.get_package(),
