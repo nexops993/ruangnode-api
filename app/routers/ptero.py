@@ -82,7 +82,7 @@ async def _panel(method: str, url: str, key: str, payload: dict | None = None,
                 return resp.status_code, resp.json()
             except ValueError:
                 return resp.status_code, None
-    except (httpx.ConnectError, httpx.DNSError, httpx.TimeoutException):
+    except (httpx.ConnectError, httpx.TimeoutException):
         upstream_fail("Panel tidak terjangkau dari server (DNS/koneksi/timeout).")
     except httpx.HTTPError:
         upstream_fail("Gagal berkomunikasi dengan panel.")
