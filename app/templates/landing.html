@@ -23,17 +23,19 @@
 
 <div class="explorer">
   <aside class="card side" id="sidebar" aria-label="Semua kategori dan fitur">
-    <div class="row" style="align-items:center;margin-bottom:6px">
-      <b style="font-size:15px">Navigasi Fitur</b>
+    <div class="side-h">
+      <b>Navigasi Fitur</b>
       <button class="btn ghost sm x" id="sideclose" type="button" aria-label="Tutup sidebar">&times;</button>
     </div>
     <a class="ov on" href="#" id="ovlink">{{ icon("layers", 16) }} Ringkasan</a>
     {% for g in groups %}
     <div class="grp">
-      <div class="grp-h"><span class="tile t-{{ g.icon }}">{{ icon(g.icon, 14) }}</span>{{ g.name }}<span class="cnt">{{ g.endpoints|length }}</span></div>
+      <button class="grp-h" type="button" aria-expanded="false"><span class="tile t-{{ g.icon }}">{{ icon(g.icon, 14) }}</span>{{ g.name }}<span class="cnt">{{ g.endpoints|length }}</span><span class="chev">{{ icon("chevron", 16) }}</span></button>
+      <div class="eps">
       {% for e in g.endpoints %}
       <a class="ep" href="#{{ e.path }}" data-path="{{ e.path }}"><span class="m">{{ e.method }}</span><span class="p">{{ e.path[5:] }}</span></a>
       {% endfor %}
+      </div>
     </div>
     {% endfor %}
   </aside>
@@ -114,11 +116,20 @@ function showDetail(path){
     'curl "https://api.ruangnode.me' + path + '?apikey=' + KEY + '"';
   ov.style.display = 'none'; det.style.display = 'block';
   document.getElementById('ovlink').classList.remove('on');
-  document.querySelectorAll('.side a.ep').forEach(a =>
-    a.classList.toggle('on', a.dataset.path === path));
+  document.querySelectorAll('.side a.ep').forEach(a => {
+    const on = a.dataset.path === path;
+    a.classList.toggle('on', on);
+    if (on) a.closest('.grp').classList.add('open');
+  });
   history.replaceState(null, '', '#' + path);
   closeSide();
 }
+document.querySelectorAll('.side .grp-h').forEach(h =>
+  h.addEventListener('click', () => {
+    const g = h.parentElement;
+    g.classList.toggle('open');
+    h.setAttribute('aria-expanded', g.classList.contains('open'));
+  }));
 document.querySelectorAll('.side a.ep').forEach(a =>
   a.addEventListener('click', ev => { ev.preventDefault(); showDetail(a.dataset.path); }));
 document.getElementById('ovlink').addEventListener('click', ev => { ev.preventDefault(); showOverview(); closeSide(); });

@@ -135,7 +135,14 @@
     cursor:pointer;box-shadow:var(--shadow);padding:0}
   .hambtn:hover{background:#fbfaff}
   .side{padding:14px 12px;position:fixed;top:0;bottom:0;left:0;width:min(324px,86vw);z-index:80;
-    border-radius:0;transform:translateX(-105%);transition:transform .22s ease;overflow-y:auto}
+    border-radius:0;transform:translateX(-105%);transition:transform .22s ease;overflow-y:auto;overflow-x:hidden}
+  .side-h{display:flex;align-items:center;width:100%;margin-bottom:8px}
+  .side-h b{font-size:15px}
+  .side .grp-h{width:100%;background:none;border:0;cursor:pointer;font-family:inherit;text-align:left}
+  .side .grp-h .chev{display:inline-flex;color:var(--muted);transition:transform .18s ease}
+  .side .grp.open .grp-h .chev{transform:rotate(180deg)}
+  .side .eps{display:none}
+  .side .grp.open .eps{display:block}
   .side.open{transform:none;box-shadow:0 0 60px rgba(44,40,66,.35)}
   .backdrop{position:fixed;inset:0;background:rgba(44,40,66,.45);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
   .backdrop.on{opacity:1;pointer-events:auto}
