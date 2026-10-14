@@ -25,6 +25,7 @@ from .routers import social_dl as social_dl_router
 from .routers import host_dl as host_dl_router
 from .routers import ai as ai_router
 from .routers import tools as tools_router
+from .routers import stalk as stalk_router
 from .security import (
     COOKIE_NAME,
     SESSION_DAYS,
@@ -59,6 +60,7 @@ app.include_router(social_dl_router.router)
 app.include_router(host_dl_router.router)
 app.include_router(ai_router.router)
 app.include_router(tools_router.router)
+app.include_router(stalk_router.router)
 
 # ----------------------------------------------------------------------------
 # Data katalog (modul dibangun per kategori sampai tuntas)
@@ -70,7 +72,7 @@ CATEGORIES = [
      "desc": "Chat AI, generator dan editor gambar, text-to-speech, text-to-video."},
     {"name": "Tools", "icon": "tools", "planned": 43, "status": "aktif",
      "desc": "OCR, konverter, QR, shortener, screenshot web, temp mail, olah PDF."},
-    {"name": "Stalk", "icon": "stalk", "planned": 26, "status": "segera",
+    {"name": "Stalk", "icon": "stalk", "planned": 26, "status": "aktif",
      "desc": "Lihat profil publik dari puluhan platform sosial dan game."},
     {"name": "Pterodactyl", "icon": "ptero", "planned": 18, "status": "segera",
      "desc": "Kelola panel game server: server, user, suspend, restart."},
@@ -181,6 +183,32 @@ ACTIVE_ENDPOINTS = [
     {"method": "GET", "path": "/api/tools/xlcircle", "desc": "Mengecek status dan kuota XL Circle"},
     {"method": "GET", "path": "/api/tools/spamotp", "desc": "Tidak disediakan di RuangNode API"},
     {"method": "GET", "path": "/api/tools/alightmotion", "desc": "Tidak disediakan di RuangNode API"},
+    {"method": "GET", "path": "/api/stalk/githubuser", "desc": "Melihat profil GitHub: bio, follower, dan repo populer"},
+    {"method": "GET", "path": "/api/stalk/npm", "desc": "Melihat info paket npm: versi terbaru, deskripsi, dan maintainer"},
+    {"method": "GET", "path": "/api/stalk/bluesky", "desc": "Melihat profil Bluesky: bio, jumlah pengikut, dan postingan"},
+    {"method": "GET", "path": "/api/stalk/genshin", "desc": "Melihat profil pemain Genshin Impact dari UID"},
+    {"method": "GET", "path": "/api/stalk/steam", "desc": "Melihat profil Steam dari nama vanity atau SteamID64"},
+    {"method": "GET", "path": "/api/stalk/telegram", "desc": "Melihat info profil, grup, atau channel Telegram publik"},
+    {"method": "GET", "path": "/api/stalk/youtube", "desc": "Melihat info channel YouTube: nama, deskripsi, dan subscriber"},
+    {"method": "GET", "path": "/api/stalk/kick", "desc": "Melihat profil streamer Kick: bio, follower, dan status live"},
+    {"method": "GET", "path": "/api/stalk/twitch", "desc": "Melihat info profil Twitch publik"},
+    {"method": "GET", "path": "/api/stalk/threads", "desc": "Melihat info profil Threads publik"},
+    {"method": "GET", "path": "/api/stalk/twitter", "desc": "Melihat info profil X (Twitter) publik"},
+    {"method": "GET", "path": "/api/stalk/facebook", "desc": "Melihat info profil Facebook publik"},
+    {"method": "GET", "path": "/api/stalk/pinterest", "desc": "Melihat profil Pinterest: nama dan jumlah pengikut"},
+    {"method": "GET", "path": "/api/stalk/discord", "desc": "Menghitung tanggal pembuatan akun dari Discord user ID"},
+    {"method": "GET", "path": "/api/stalk/whatsapp", "desc": "Memformat nomor WhatsApp dan membuat tautan wa.me"},
+    {"method": "GET", "path": "/api/stalk/tiktok", "desc": "Melihat info profil TikTok: nickname dan statistik"},
+    {"method": "GET", "path": "/api/stalk/instagram", "desc": "Melihat info profil Instagram publik"},
+    {"method": "GET", "path": "/api/stalk/mlbb", "desc": "Mengecek nickname akun Mobile Legends dari ID dan Zone ID"},
+    {"method": "GET", "path": "/api/stalk/codm", "desc": "Mengecek nickname akun Call of Duty Mobile dari UID"},
+    {"method": "GET", "path": "/api/stalk/freefire", "desc": "Mengecek nickname akun Free Fire dari UID"},
+    {"method": "GET", "path": "/api/stalk/valorant", "desc": "Mengecek nickname akun Valorant dari Riot ID"},
+    {"method": "GET", "path": "/api/stalk/pubg", "desc": "Mengecek nickname akun PUBG Mobile dari ID pemain"},
+    {"method": "GET", "path": "/api/stalk/reddit", "desc": "Melihat info akun Reddit publik"},
+    {"method": "GET", "path": "/api/stalk/linkedin", "desc": "Melihat info profil LinkedIn publik"},
+    {"method": "GET", "path": "/api/stalk/spotify", "desc": "Melihat info profil atau artis Spotify publik"},
+    {"method": "GET", "path": "/api/stalk/roblox", "desc": "Melihat info akun Roblox dari username"},
 ]
 
 # ----------------------------------------------------------------------------
