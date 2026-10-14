@@ -264,7 +264,11 @@ async def stalk_steam(username: str = Query(default="")):
     t = resp.text
     def tag(name: str) -> str | None:
         m = re.search(rf"<{name}>(.*?)</{name}>", t, re.S)
-        return ihtml.unescape(m.group(1).strip()) if m else None
+        if not m:
+            return None
+        v = m.group(1).strip()
+        cm = re.match(r"<!\[CDATA\[(.*)\]\]>$", v, re.S)
+        return ihtml.unescape(cm.group(1) if cm else v)
     if not tag("steamID64"):
         upstream_fail("Profil Steam tidak ditemukan atau privat.")
     return ok({
@@ -376,7 +380,20 @@ async def stalk_threads(user: str = Query(default="")):
 @router.get("/twitter")
 async def stalk_twitter(username: str = Query(default="")):
     username = _require(username, "username").lstrip("@")
-    return ok(await _meta_profile("X (Twitter)", f"https://x.com/{username}"))
+    try:
+        return ok(await _meta_profile("X (Twitter)", f"https://x.com/{username}"))
+    except Exception:  # noqa: BLE001
+        # X sering menolak IP datacenter (403) meski kadang lolos.
+        html_text, final = await fetch_text(f"https://x.com/{username}",
+                                            headers=NAV_HEADERS)
+        og = _og_meta(html_text)
+        if og.get("title"):
+            return ok({"title": og.get("title"), "description": og.get("description"),
+                       "image": og.get("image"), "url": final})
+        return limited(
+            {"username": username},
+            "X (Twitter) membatasi akses profil dari IP server; coba lagi nanti "
+            "atau isi cookie sesi bila tersedia.")
 
 
 @router.get("/facebook")
@@ -398,17 +415,31 @@ async def stalk_pinterest(username: str = Query(default="")):
         if username.lower() not in html_text.lower():
             upstream_fail("Profil Pinterest tidak ditemukan.")
     t = html_text
-    name = (re.search(r'"full_name":"([^"]{1,80})","username":"' + re.escape(username) + r'"', t)
-            or re.search(r'"username":"' + re.escape(username) + r'","full_name":"([^"]{1,80})"', t))
-    followers = re.search(r'"username":"' + re.escape(username) + r'"[^}]{0,600}?"follower_count":(\d+)', t)
-    img = re.search(r'"username":"' + re.escape(username) + r'"[^}]{0,600}?"image_(?:large|medium)_url":"([^"]+)"', t)
+    ux = re.escape(username)
+    name = (re.search(r'"full_name":"([^"]{1,80})","username":"' + ux + r'"', t)
+            or re.search(r'"username":"' + ux + r'","full_name":"([^"]{1,80})"', t))
+    if not name:
+        for m in re.finditer(r'"username":"' + ux + r'"', t):
+            win = t[max(0, m.start() - 500):m.start()]
+            vm = re.search(r'"verified_identity":\{"name":"([^"]{1,80})"', win)
+            if vm:
+                name = vm
+                break
+    followers = re.search(r'"username":"' + ux + r'"[^}]{0,600}?"follower_count":(\d+)', t)
+    avatar = None
+    for m in re.finditer(r'"username":"' + ux + r'"', t):
+        win = t[max(0, m.start() - 600):m.start() + 600]
+        im = re.search(r'"image_(?:large|medium|small|original)_url":"([^"]+)"', win)
+        if im:
+            avatar = im.group(1).replace("\\u0026", "&")
+            break
     if not name and not followers:
         upstream_fail("Data profil Pinterest tidak bisa dibaca dari server.")
     return ok({
         "username": username,
         "name": ihtml.unescape(name.group(1)) if name else None,
         "followers": int(followers.group(1)) if followers else None,
-        "avatar": img.group(1).replace("\\u0026", "&") if img else None,
+        "avatar": avatar,
         "url": final,
     })
 
